@@ -1,0 +1,16 @@
+### Request prediction
+# @name predict
+POST http://localhost:8001/prediction
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="file"; filename="sign_bad_deformation_011.png"
+Content-Type: image/png
+
+< ../samples/sign_bad_graffiti_010.png
+--MyBoundary--
+
+### Get prediction result
+@prediction_id = {{predict.response.body.prediction_id}}
+
+GET http://localhost:8001/prediction/{{prediction_id}}
