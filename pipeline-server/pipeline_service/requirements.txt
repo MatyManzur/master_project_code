@@ -1,0 +1,7 @@
+onnxruntime
+Pillow
+jax
+onnx
+keras
+numpy
+opencv-python-headless
