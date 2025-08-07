@@ -3,17 +3,15 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+import onnxruntime as ort
 from tensorflow.keras.preprocessing import image
 from PIL import Image
 import numpy as np
 import uuid
 import shutil
 import os
-import time
 
-INPUT_SIZE = (380, 380) # EfficientNet B4 input size
-#INPUT_SIZE = (224, 224)  # EfficientNet B0 input size
+INPUT_SIZE = (380, 380)
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -27,12 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load the TensorFlow model
-model = load_model('./FTcS24D108B32L5e6T7b+.keras')
-#model = load_model('../../models/efficient_net/FTB32L1e5T7a+.keras')
+session = ort.InferenceSession("./classifier.onnx")
 
 def get_label(prediction):
-    return "OK" if prediction > 0.5 else "Not OK" 
+    return "Healthy" if prediction > 0.5 else "Damaged" 
 
 # Setup storage
 UPLOAD_DIR = "uploads"
@@ -54,14 +50,12 @@ def prepreprocess_image(img):
     )
     new_img.paste(img, paste_position)
     new_img = new_img.resize(INPUT_SIZE, Image.LANCZOS)
-    new_img.save("debug_padded_image.jpg")
     return new_img
 
 # Preprocess image for EfficientNet
 def preprocess_image(img_path):
     img = image.load_img(img_path)
     new_img = prepreprocess_image(img)
-    #new_img = img.resize(INPUT_SIZE, Image.LANCZOS)
     img_array = image.img_to_array(new_img)
     img_array = tf.keras.applications.efficientnet.preprocess_input(img_array)
     img_array = np.expand_dims(img_array, axis=0)
@@ -83,7 +77,7 @@ async def create_prediction(file: UploadFile = File(...), background_tasks: Back
 def run_inference(prediction_id: str, file_path: str):
     try:
         img = preprocess_image(file_path)
-        prediction = model.predict(img)
+        prediction = session.run(None, {session.get_inputs()[0].name: img})[0][0]
         PREDICTIONS[prediction_id] = {
             "status": "done",
             "result": PredictionResult(prediction=prediction, label=get_label(prediction)).model_dump()

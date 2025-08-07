@@ -1,2 +1,6 @@
 excalidraw
 samples
+**/*.onnx
+**/__pycache__
+.venv
+borrar.*
