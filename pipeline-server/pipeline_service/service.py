@@ -52,7 +52,7 @@ class ClassificationService:
         if crop is not None:
             image = image.crop(crop)
         results = self.session.run(None, {input_name: preprocess_image(image)})
-        return [dict(score=result[0][0]) for result in results]
+        return [dict(score=float(result[0][0])) for result in results]
     
 @dataclass
 class BBox:
@@ -95,16 +95,21 @@ class PipelineService:
 
     async def classify_object(self, image: ImageType, object: DetectionObject) -> dict:
         classification_result = (await self.classification_service.to_async.predict(image, crop=(
-            object.box.x1, object.box.y1, object.box.x2, object.box.y2
+            int(object.box.x1), int(object.box.y1), int(object.box.x2), int(object.box.y2)
         )))[0]
         confidence = object.confidence
-        score = classification_result['score'].item()
+        score = classification_result['score']
         return {
-            "box": object.box,
-            "confidence": confidence,
-            "cls_score": score,
-            "damaged_score": confidence * (1 - score),
-            "healthy_score": confidence * score
+            "box": {
+                "x1": int(object.box.x1),
+                "y1": int(object.box.y1),
+                "x2": int(object.box.x2),
+                "y2": int(object.box.y2),
+            },
+            "confidence": float(confidence),
+            "cls_score": float(score),
+            "damaged_score": float(confidence * (1 - score)),
+            "healthy_score": float(confidence * score)
         }
 
     @bentoml.api
