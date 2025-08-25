@@ -1,10 +1,12 @@
-import { Box, Button, Text } from "@chakra-ui/react";
+import { Box, Button, Text, VStack } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
 import { HiCamera, HiCheck, HiRefresh, HiX } from "react-icons/hi";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReport } from "../providers/ReportProvider";
 import { ImageFrame } from "../components/ImageFrame";
+import { LocationSelectorMap } from "../components/LocationSelectorMap";
+import type { LatLng } from "leaflet";
 
 export function Home() {
 
@@ -119,7 +121,6 @@ export function Home() {
     setCameraState('initial');
   }
 
-
   return (
     <>
       <ActionBar title="New Report" /> {/* i18n */}
@@ -134,20 +135,24 @@ export function Home() {
       )}
 
       {cameraState === 'initial' && (
-        <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={20}>
-          <Button bg="secondary" color="onSecondary" size="2xl" 
-            _hover={{
-                bg: 'onSecondary',
-                color: 'secondary',
-              }}
-            onClick={onNewReport}
-          >
-            <HiCamera/>
-            <Text fontSize="lg" fontWeight="extrabold">
-              Report damage
-            </Text>{/* i18n */}
-          </Button>
-        </Box>
+        <VStack>
+          <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={20}>
+            <Button bg="secondary" color="onSecondary" size="2xl" 
+              _hover={{
+                  bg: 'onSecondary',
+                  color: 'secondary',
+                }}
+              onClick={onNewReport}
+            >
+              <HiCamera/>
+              <Text fontSize="lg" fontWeight="extrabold">
+                Report damage
+              </Text>{/* i18n */}
+            </Button>
+          </Box>                   
+      </VStack>
+
+
       )}
 
       {cameraState === 'streaming' && (
@@ -214,6 +219,7 @@ export function Home() {
             <ImageFrame
               imageSrc={capturedImage}
               imageAlt="Captured damage"
+              maxHeight={"45vh"}
             />           
             
             <Box display="flex" gap={3} justifyContent="center" mb={4}>
