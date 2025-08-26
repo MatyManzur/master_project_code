@@ -267,23 +267,7 @@ class BatchProcessor:
                 logger.error("Missing latitude or longitude in report data")
                 return False
             
-            s3_key = report_data.get('image')
-            report_date = report_data.get('date')
-            report_uuid = report_data.get('report_uuid')
-            
-            logger.info(f"Publishing to Supabase: lat={lat}, lon={lon}")
-            
-            supabase_data = {
-                'lat': float(lat),
-                'lon': float(lon),
-                'image_name': s3_key,
-                'report_date': report_date,
-                'report_uuid': report_uuid
-            }
-            
-            response = self.supabase_client.rpc('insert_report', supabase_data).execute()
-            if response.data:
-                logger.info(f"Successfully published new report to DB: {response.data}")
+            s3_key = report_data.get('image')            
 
             processing_time = processing_results.get('processing_time', None)
             image_size = processing_results.get('image_size', None)

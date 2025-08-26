@@ -69,7 +69,9 @@ REPORT_DATA="{
         \"lat\": 40.7128,
         \"long\": -74.0060
     },
-    \"date\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+    \"date\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+    \"address\": \"123 Main St, New York, NY 10001\",
+    \"description\": \"Broken streetlight sign near the intersection.\"
 }"
 
 echo "Report data: $REPORT_DATA"

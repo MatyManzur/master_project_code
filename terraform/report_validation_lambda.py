@@ -3,10 +3,15 @@ import uuid
 import boto3
 import os
 import re
+import urllib.request
+import urllib.parse
 from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 
 REPORT_UUID_LENGTH = 8
+SUPABASE_REPORT_ENDPOINT = "/rest/v1/rpc/insert_report"
+DESCRIPTION_MAX_LEN = 480
+ADDRESS_MAX_LEN = 480
 
 def lambda_handler(event, context):
     """
@@ -18,7 +23,9 @@ def lambda_handler(event, context):
             "lat": float,
             "long": float
         },
-        "date": "2024-01-01T12:00:00Z" (ISO 8601 timestamp)
+        "date": "2024-01-01T12:00:00Z" (ISO 8601 timestamp),
+        "address": "" (optional),
+        "description": "" (optional)
     }
     """
     
@@ -27,8 +34,10 @@ def lambda_handler(event, context):
     
     bucket_name = os.environ.get('BUCKET_NAME')
     queue_url = os.environ.get('SQS_QUEUE_URL')
+    supabase_url = os.environ.get('SUPABASE_URL')
+    supabase_key = os.environ.get('SUPABASE_KEY')
     
-    if not bucket_name or not queue_url:
+    if not bucket_name or not queue_url or not supabase_url or not supabase_key:
         return {
             'statusCode': 500,
             'headers': {
@@ -63,7 +72,18 @@ def lambda_handler(event, context):
             'report_uuid': str(uuid.uuid4())[:REPORT_UUID_LENGTH]
         }
         
+        # Add optional fields if they exist
+        if 'address' in body and body['address']:
+            report_data['address'] = body['address']
+        if 'description' in body and body['description']:
+            report_data['description'] = body['description']
+        
         try:
+            supabase_success = call_supabase_rpc(supabase_url, supabase_key, report_data)
+            if not supabase_success:
+                print(f"Warning: Failed to store report {report_data['report_uuid']} in Supabase")
+                return create_error_response(500, 'Failed to store report in database')
+            
             response = sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=json.dumps(report_data),
@@ -77,8 +97,8 @@ def lambda_handler(event, context):
                         'DataType': 'String'
                     }
                 }
-            )
-            
+            )            
+
             return {
                 'statusCode': 200,
                 'headers': {
@@ -191,6 +211,18 @@ def validate_report_structure(body, bucket_name, s3_client):
     except Exception as e:
         return f'Invalid date format: {str(e)}'
     
+    if 'description' in body and body['description']:
+        if not isinstance(body['description'], str):
+            return 'Description must be a string'
+        if len(body['description']) > DESCRIPTION_MAX_LEN:
+            return f'Description must not exceed {DESCRIPTION_MAX_LEN} characters'
+
+    if 'address' in body and body['address']:
+        if not isinstance(body['address'], str):
+            return 'Address must be a string'
+        if len(body['address']) > ADDRESS_MAX_LEN:
+            return f'Address must not exceed {ADDRESS_MAX_LEN} characters'
+    
     return None  # No validation errors
 
 def create_error_response(status_code, message):
@@ -207,3 +239,51 @@ def create_error_response(status_code, message):
             'status': 'error'
         })
     }
+
+def call_supabase_rpc(supabase_url, supabase_key, report_data):
+    """
+    Call a Supabase RPC function to store the report data
+    Returns True if successful, False otherwise
+    """
+    try:
+        rpc_payload = {
+            'report_uuid': report_data['report_uuid'],
+            'image_name': report_data['image'],
+            'lat': report_data['location']['lat'],
+            'lon': report_data['location']['long']
+        }
+        
+        if 'address' in report_data:
+            rpc_payload['address'] = report_data['address']
+        if 'description' in report_data:
+            rpc_payload['description'] = report_data['description']
+        
+        # Supabase RPC endpoint
+        rpc_url = f"{supabase_url}{SUPABASE_REPORT_ENDPOINT}"
+        
+        # Prepare the request
+        data = json.dumps(rpc_payload).encode('utf-8')
+        
+        request = urllib.request.Request(
+            rpc_url,
+            data=data,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {supabase_key}',
+                'apikey': supabase_key
+            },
+            method='POST'
+        )
+        
+        response = urllib.request.urlopen(request)
+        
+        if response.status == 200:
+            print(f"Successfully called Supabase RPC for report {report_data['report_uuid']}")
+            return True
+        else:
+            print(f"Supabase RPC call failed with status {response.status}: {response.read().decode('utf-8')}")
+            return False
+            
+    except Exception as e:
+        print(f"Error calling Supabase RPC: {str(e)}")
+        return False

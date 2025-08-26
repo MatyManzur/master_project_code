@@ -7,7 +7,9 @@ CREATE TABLE reports (
   reported_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   processed_at TIMESTAMPTZ DEFAULT NULL,
   processing_time INTERVAL DEFAULT NULL,
-  image_size INTEGER DEFAULT NULL
+  image_size INTEGER DEFAULT NULL,
+  address TEXT DEFAULT NULL,
+  description TEXT DEFAULT NULL
 );
 
 CREATE INDEX reports_location_gix
@@ -22,19 +24,23 @@ CREATE OR REPLACE FUNCTION insert_report(
     lon DOUBLE PRECISION,
     image_name TEXT,
     report_uuid TEXT,
+    address TEXT DEFAULT NULL,
+    description TEXT DEFAULT NULL,
     report_state VARCHAR DEFAULT 'new',
     report_date TIMESTAMPTZ DEFAULT NOW()
 ) RETURNS INTEGER AS $$
 DECLARE
     new_id INTEGER;
 BEGIN
-    INSERT INTO reports (location, image_name, report_uuid, state, reported_at)
+    INSERT INTO reports (location, image_name, report_uuid, state, reported_at, address, description)
     VALUES (
         ST_SetSRID(ST_MakePoint(lon, lat), 4326),
         image_name,
         report_uuid,
         report_state,
-        report_date
+        report_date,
+        address,
+        description
     )
     RETURNING id INTO new_id;
     RETURN new_id;

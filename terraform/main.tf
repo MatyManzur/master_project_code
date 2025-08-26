@@ -534,6 +534,8 @@ resource "aws_lambda_function" "report_validation_lambda" {
     variables = {
       BUCKET_NAME   = aws_s3_bucket.images_bucket.bucket
       SQS_QUEUE_URL = aws_sqs_queue.request_queue.url
+      SUPABASE_URL  = var.supabase_url
+      SUPABASE_KEY  = var.supabase_key
     }
   }
 
