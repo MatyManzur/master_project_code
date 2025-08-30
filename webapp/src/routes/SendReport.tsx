@@ -1,33 +1,122 @@
-import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
+import { 
+  Box, 
+  Button, 
+  HStack, 
+  Text, 
+  VStack,
+  Spinner
+} from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
 import { ImageFrame } from "../components/ImageFrame";
 import { useReport } from "../providers/ReportProvider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LatLng } from "leaflet";
 import { LocationSelectorMap } from "../components/LocationSelectorMap";
 import { useNavigate } from "react-router-dom";
+import { toaster } from "../components/ui/toaster";
+import { submitReport as submitReportService } from "../services/ReportService";
 
 export function SendReport() {
-  const { capturedImage } = useReport();
+  const { capturedImage, setReportUuid } = useReport();
   const [address, setAddress] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
+  const [description, setDescription] = useState<string>('');
+  const [confirmAction, setConfirmAction] = useState<'back' | 'discard' | 'submit' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  const MAX_FIELD_LENGTH = 480;
+
+  // Automatically navigate to home if no image is captured
+  useEffect(() => {
+    if (!capturedImage) {
+      navigate('/home');
+    }
+  }, [capturedImage, navigate]);
+
   function onBack() {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "/home";
+    if (!isSubmitting) {
+      setConfirmAction('back');
     }
   }
 
   function handleDiscard() {
-    navigate('/home');
+    setConfirmAction('discard');
   }
 
   function handleSubmit() {
     if (selectedLocation) {
+      setConfirmAction('submit');
+    }
+  }
+
+  function confirmAndExecuteAction() {
+    switch (confirmAction) {
+      case 'back':
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = "/home";
+        }
+        break;
+      case 'discard':
+        navigate('/home');
+        break;
+      case 'submit':
+        setConfirmAction(null); // Close dialog first
+        submitReport(); // Then start submission
+        break;
+    }
+    if (confirmAction !== 'submit') {
+      setConfirmAction(null);
+    }
+  }
+
+  function cancelAction() {
+    setConfirmAction(null);
+  }
+
+  async function submitReport() {
+    if (!selectedLocation || !capturedImage) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      toaster.create({
+        title: "Submitting report...", // i18n
+        type: "loading",
+        id: "submit-report"
+      });
+      
+      const trimmedDescription = (description.trim().length > MAX_FIELD_LENGTH)
+        ? description.trim().slice(0, MAX_FIELD_LENGTH)
+        : (description.trim() || undefined);
+
+      const trimmedAddress = (address && address.length > MAX_FIELD_LENGTH)
+        ? address.slice(0, MAX_FIELD_LENGTH)
+        : (address || undefined);
+
+      const response = await submitReportService(
+        capturedImage,
+        { lat: selectedLocation.lat, lng: selectedLocation.lng },
+        trimmedDescription,
+        trimmedAddress
+      );
+      
+      setReportUuid(response.report_uuid);
+      toaster.dismiss("submit-report");
       navigate('/report-success');
+    } catch (err) {
+      toaster.dismiss("submit-report");
+      
+      toaster.create({
+        title: "Failed to submit report", // i18n
+        description: err instanceof Error ? err.message : 'Please try again.', // i18n
+        type: "error",
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -60,26 +149,6 @@ export function SendReport() {
         showBackButton={true}
         onBack={onBack}
       ></ActionBar>{/* i18n */}
-      {!capturedImage && (
-        <Box w="100vw" alignContent="center" justifyContent="center" display="flex" mt={4}>
-          <VStack gap={4}>
-            <Text fontSize="lg" color="error" fontWeight="bold" ml="4"> {/* i18n */}
-              No image to send. Please go back and take a picture.
-            </Text>
-            <Box>
-              <Button
-                color="onSecondary"
-                bg="secondary"
-                _hover={{ bg: 'onSecondary', color: 'secondary' }}
-                onClick={onBack}
-                size="xl"
-              >
-                Go back to take picture
-              </Button> {/* i18n */}
-            </Box>
-          </VStack>
-        </Box>
-      )}
       {capturedImage && (
       <Box w='full' alignContent={'center'} justifyContent={'flex-start'} display={'flex'} mt={4}>
         <VStack w='full'>
@@ -90,6 +159,8 @@ export function SendReport() {
                 <Text mb={1}>Description (optional):</Text> {/* i18n */}
                 <textarea
                   placeholder="Describe the damage..." // i18n
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   style={{
                     width: "100%",
                     padding: "8px",
@@ -112,7 +183,7 @@ export function SendReport() {
           <Box w='full' h='35vh'>
             <LocationSelectorMap onLocationChange={onLocationChange} />
           </Box>
-          <Text h='2vh'>
+          <Text minH='4vh'>
             {address ? (
               <>
                 {address} 
@@ -126,12 +197,13 @@ export function SendReport() {
           <HStack gap={4} w="full" pt={4}>
             <Button
               flex={1}
-              color="secondary"
-              bg="onSecondary"
+              color="onSurface"
+              bg="surface"
               border="1px solid"
-              borderColor="secondary"
-              _hover={{ bg: 'secondary', color: 'onSecondary' }}
+              borderColor="border"
+              _hover={{ bg: 'onSurface', color: 'surface' }}
               onClick={handleDiscard}
+              disabled={isSubmitting}
               size="xl"
             >
               Discard Report
@@ -142,14 +214,83 @@ export function SendReport() {
               bg="secondary"
               _hover={{ bg: 'onSecondary', color: 'secondary' }}
               onClick={handleSubmit}
-              disabled={!selectedLocation}
+              disabled={!selectedLocation || isSubmitting}
               size="xl"
             >
-              Submit Report
+              {isSubmitting ? (
+                <HStack gap={2}>
+                  <Spinner size="sm" />
+                  <Text>Submitting...</Text>
+                </HStack>
+              ) : (
+                'Submit Report'
+              )}
             </Button>
           </HStack>
         </VStack>        
       </Box>
+      )}
+
+      {/* Confirmation Dialog */}
+      {confirmAction !== null && !isSubmitting && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="blackAlpha.600"
+          zIndex="overlay"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          onClick={cancelAction}
+        >
+          <Box
+            bg="background"
+            color="onBackground"
+            boxShadow="xl"
+            borderRadius="md"
+            p={6}
+            maxW="md"
+            w="90%"
+            zIndex="modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <VStack gap={4} align="stretch">
+              <Text fontSize="lg" fontWeight="bold">
+                {confirmAction === 'back' && 'Discard Report'} {/* i18n */}
+                {confirmAction === 'discard' && 'Discard Report'} {/* i18n */}
+                {confirmAction === 'submit' && 'Submit Report'} {/* i18n */}
+              </Text>
+              
+              <Text>
+                {confirmAction === 'back' && 'Are you sure you want to go back? Any unsaved changes will be lost.'} {/* i18n */}
+                {confirmAction === 'discard' && 'Are you sure you want to discard this report? This action cannot be undone.'} {/* i18n */}
+                {confirmAction === 'submit' && 'Are you sure you want to submit this report?'} {/* i18n */}
+              </Text>
+              
+              <HStack gap={3} justify="flex-end">
+                <Button 
+                  variant="outline" 
+                  onClick={cancelAction}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  bg='primary'
+                  color='onPrimary'
+                  _hover={{ bg: 'onPrimary', color: 'primary' }}
+                  onClick={confirmAndExecuteAction}
+                >
+                  {confirmAction === 'back' && 'Discard'} {/* i18n */}
+                  {confirmAction === 'discard' && 'Discard'} {/* i18n */}
+                  {confirmAction === 'submit' && 'Submit'} {/* i18n */}
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+        </Box>
       )}
     </>
   );

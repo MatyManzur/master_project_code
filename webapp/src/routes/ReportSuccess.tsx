@@ -6,37 +6,38 @@ import { useEffect } from "react";
 
 export function ReportSuccess() {
   const navigate = useNavigate();
-  const { setCapturedImage } = useReport();
-
-  // Generate a random report number for demonstration
-  const reportNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
+  const { setCapturedImage, reportUuid, setReportUuid } = useReport();
 
   useEffect(() => {
-    // Clear the captured image when reaching success page
     setCapturedImage(null);
-  }, [setCapturedImage]);
+    
+    if (!reportUuid) {
+      navigate('/home');
+    }
+  }, [setCapturedImage, reportUuid, navigate]);
 
   function handleNewReport() {
+    setReportUuid(null);
     navigate('/home');
   }
 
   return (
     <>
       <ActionBar
-        title="Report Submitted"
+        title="Report Submitted" 
         showBackButton={false}
-      />
+      /> {/* i18n */}
       <Box w="100vw" alignContent="center" justifyContent="center" display="flex" mt={8}>
         <VStack gap={6} maxW="80vw" textAlign="center">
           <Text fontSize="2xl" fontWeight="bold" color="primary">
             Report submitted successfully!
-          </Text>
+          </Text> {/* i18n */}
           <Text fontSize="lg">
-            Report number: <Text as="span" fontWeight="bold">{reportNumber}</Text>
-          </Text>
+            Report number: <Text as="span" fontWeight="bold">{reportUuid || 'N/A'}</Text>
+          </Text> {/* i18n */}
           <Text fontSize="md" color="gray.600">
             It will be processed soon.
-          </Text>
+          </Text>   {/* i18n */}
           <Button
             color="onSecondary"
             bg="secondary"
@@ -46,7 +47,7 @@ export function ReportSuccess() {
             mt={4}
           >
             Start New Report
-          </Button>
+          </Button> {/* i18n */}
         </VStack>
       </Box>
     </>

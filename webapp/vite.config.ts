@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { loadEnv } from 'vite'
+
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+const host = env.VITE_HOST
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -24,6 +28,6 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    allowedHosts: ['*.ngrok-free.app', 'localhost']
+    allowedHosts: [host]
   }
 })

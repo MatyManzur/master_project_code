@@ -10,6 +10,7 @@ import { HiLocationMarker } from "react-icons/hi";
 export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (pos: LatLng) => void}) {
   const [position, setPosition] = useState<LatLng | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isPermissionDenied, setIsPermissionDenied] = useState(false);
 
   function MapEvents({ setPosition, onLocationChange }: { setPosition: (pos: LatLng) => void, onLocationChange?: (pos: LatLng) => void }) {
     useMapEvents({
@@ -25,8 +26,10 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
     return null;
   }
 
-  useEffect(() => {
+  function requestLocation() {
     if (navigator.geolocation) {
+      setError(null);
+      setIsPermissionDenied(false);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const newPos = new LatLng(pos.coords.latitude, pos.coords.longitude);
@@ -36,22 +39,29 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
           }
         },
         (err) => {          
-          setError(() => {
-            switch(err.code) { //i18n!!
-              case err.PERMISSION_DENIED: 
-                return "Permission to access location was denied.";
-              case err.POSITION_UNAVAILABLE:
-                return "Location information is unavailable in this device.";
-              case err.TIMEOUT:
-                return "The request to get user location timed out.";
-              default:
-                return "An unknown error occurred while fetching location.";
-            }
-          });
+          if (err.code === err.PERMISSION_DENIED) {
+            setIsPermissionDenied(true);
+            setError("Location permission was denied. Please grant location access to continue."); //i18n!!
+          } else {
+            setError(() => {
+              switch(err.code) { //i18n!!
+                case err.POSITION_UNAVAILABLE:
+                  return "Location information is unavailable in this device.";
+                case err.TIMEOUT:
+                  return "The request to get user location timed out.";
+                default:
+                  return "An unknown error occurred while fetching location.";
+              }
+            });
+          }
         },
         { enableHighAccuracy: true }
       );
     }
+  }
+
+  useEffect(() => {
+    requestLocation();
   }, []);
 
   return (
@@ -99,7 +109,19 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
         <Box p={4} w="80%" m="0 auto 0 auto">
           <Box bg="error" color="background" p={4} borderRadius="md">
             <Text fontWeight="bold">Location Error</Text> {/* i18n */}
-            <Text>{error}</Text>
+            <Text mb={isPermissionDenied ? 3 : 0}>{error}</Text>
+            {isPermissionDenied && (
+              <Button
+                bg="background"
+                color="error"
+                size="sm"
+                _hover={{ bg: 'gray.100' }}
+                onClick={requestLocation}
+              >
+                <HiLocationMarker />
+                <Text ml={2}>Grant Location Access</Text> {/* i18n */}
+              </Button>
+            )}
           </Box>
         </Box>
       )}

@@ -5,6 +5,7 @@ import { Home } from './routes/Home'
 import { BottomNav } from './components/BottomNav'
 import { SendReport } from './routes/SendReport'
 import { ReportSuccess } from './routes/ReportSuccess'
+import { Toaster } from './components/ui/toaster'
 
 function App() {
   const location = useLocation()
@@ -22,6 +23,7 @@ function App() {
           </Routes>
       </Box>
       {!hideBottomNav && <BottomNav />}
+      <Toaster />
     </>
   )
 }

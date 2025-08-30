@@ -1,19 +1,19 @@
 import { Box, Button, Text, VStack } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
 import { HiCamera, HiCheck, HiRefresh, HiX } from "react-icons/hi";
+import { MdRotateRight } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReport } from "../providers/ReportProvider";
 import { ImageFrame } from "../components/ImageFrame";
-import { LocationSelectorMap } from "../components/LocationSelectorMap";
-import type { LatLng } from "leaflet";
 
 export function Home() {
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [rotationAngle, setRotationAngle] = useState(0);
   const [facingMode, setFacingMode] = useState('environment'); // 'user' for front, 'environment' for back
   const [error, setError] = useState('');
-  const [cameraState, setCameraState] = useState<'initial' | 'streaming' | 'captured'>('initial');
+  const [cameraState, setCameraState] = useState<'initial' | 'streaming' | 'captured' | 'permission-denied'>('initial');
   const navigate = useNavigate();
   const { setCapturedImage: setContextImage } = useReport();
 
@@ -40,11 +40,17 @@ export function Home() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing camera:', err);
-      // i18n
-      setError('Unable to access camera. Please ensure you have granted camera permissions.');
-      setCameraState('initial');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        // Permission was denied
+        setError('Camera permission was denied. Please grant camera access to continue.'); // i18n
+        setCameraState('permission-denied');
+      } else {
+        // Other errors (device not found, etc.)
+        setError('Unable to access camera. Please ensure you have granted camera permissions.'); // i18n
+        setCameraState('initial');
+      }
     }
   };
 
@@ -85,8 +91,13 @@ export function Home() {
 
   const resetCapture = () => {
     setCapturedImage(null);
+    setRotationAngle(0);
     setError('');
     setCameraState('initial');
+  };
+
+  const rotateImage = () => {
+    setRotationAngle((prev) => (prev + 90));
   };
 
   useEffect(() => {
@@ -105,10 +116,48 @@ export function Home() {
     startCameraWithMode(facingMode);
   }
 
+  function retryCamera() {
+    setError('');
+    startCameraWithMode(facingMode);
+  }
+
   function onKeepPicture() {
     if (capturedImage) {
-      setContextImage(capturedImage);
-      navigate('/send-report');
+      // If image is rotated, create a rotated version to save
+      if (rotationAngle !== 0) {
+        const normRotationAngle = rotationAngle % 360;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+          if (!ctx) return;
+          
+          // Set canvas dimensions based on rotation
+          if (normRotationAngle === 90 || normRotationAngle === 270) {
+            canvas.width = img.height;
+            canvas.height = img.width;
+          } else {
+            canvas.width = img.width;
+            canvas.height = img.height;
+          }
+          
+          // Apply rotation
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((normRotationAngle * Math.PI) / 180);
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
+          
+          // Save rotated image
+          const rotatedImageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          setContextImage(rotatedImageDataUrl);
+          navigate('/send-report');
+        };
+        
+        img.src = capturedImage;
+      } else {
+        setContextImage(capturedImage);
+        navigate('/send-report');
+      }
     }
   }
 
@@ -151,8 +200,34 @@ export function Home() {
             </Button>
           </Box>                   
       </VStack>
+      )}
 
-
+      {cameraState === 'permission-denied' && (
+        <VStack gap={4} p={6}>
+          <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={10}>
+            <VStack gap={4} textAlign="center">
+              <HiCamera size={64} color="gray" />
+              <Text fontSize="xl" fontWeight="bold">Camera Permission Required</Text> {/* i18n */}
+              <Text color="gray.600" px={4}> 
+                We need access to your camera to take photos of damage. 
+                Please grant camera permission to continue.
+              </Text> {/* i18n */}
+              <Button 
+                bg="secondary" 
+                color="onSecondary" 
+                size="lg"
+                _hover={{
+                  bg: 'onSecondary',
+                  color: 'secondary',
+                }}
+                onClick={retryCamera}
+              >
+                <HiCamera />
+                <Text ml={2}>Grant Camera Access</Text> {/* i18n */}
+              </Button>
+            </VStack>
+          </Box>
+        </VStack>
       )}
 
       {cameraState === 'streaming' && (
@@ -216,12 +291,52 @@ export function Home() {
       {cameraState === 'captured' && capturedImage && (
         <Box p={4}>
           <Box w="full" maxW="sm" mx="auto">
-            <ImageFrame
-              imageSrc={capturedImage}
-              imageAlt="Captured damage"
-              maxHeight={"45vh"}
-            />           
+            <Box 
+              bg="info" 
+              color="background"
+              p={3} 
+              borderRadius="md"
+              mb={3}
+            >
+              <Text fontSize="sm" textAlign="center">
+                Please ensure the image is properly oriented before proceeding. Use the rotate button if needed. {/* i18n */}
+              </Text>
+            </Box>
             
+            {/* Container with extra space for rotated images */}
+            <Box 
+              display="flex" 
+              justifyContent="center" 
+              alignItems="center"
+              minHeight="50vh"
+              overflow="hidden"
+              mb={4}
+            >
+              <Box transform={`rotate(${rotationAngle}deg)`} transition="transform 0.3s ease">
+                <ImageFrame
+                  imageSrc={capturedImage}
+                  imageAlt="Captured damage"
+                  maxHeight={"40vh"}
+                />
+              </Box>
+            </Box>
+            
+            {/* Rotate button above other buttons */}
+            <Box display="flex" justifyContent="center" mb={3}>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={rotateImage}
+                _hover={{
+                  bg: 'surface',
+                }}
+              >
+                <MdRotateRight />
+                <Text ml={2}>Rotate</Text> {/* i18n */}
+              </Button>
+            </Box>
+            
+            {/* Main action buttons */}
             <Box display="flex" gap={3} justifyContent="center" mb={4}>
               <Button
                 bg="secondary"
