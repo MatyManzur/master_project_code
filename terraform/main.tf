@@ -200,6 +200,154 @@ resource "aws_s3_bucket_cors_configuration" "images_bucket_cors" {
   }
 }
 
+# S3 Bucket for static website hosting
+resource "aws_s3_bucket" "webapp_bucket" {
+  bucket = "${var.bucket_name}-webapp"
+
+  tags = {
+    Name        = "WebAppBucket"
+    Environment = "Dev"
+  }
+}
+
+# S3 Bucket Public Access Block for webapp
+resource "aws_s3_bucket_public_access_block" "webapp_bucket_pab" {
+  bucket = aws_s3_bucket.webapp_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# S3 Bucket Policy for CloudFront access
+resource "aws_s3_bucket_policy" "webapp_bucket_policy" {
+  bucket     = aws_s3_bucket.webapp_bucket.id
+  depends_on = [aws_s3_bucket_public_access_block.webapp_bucket_pab]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.webapp_bucket.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.webapp_distribution.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+# S3 Bucket Website Configuration
+resource "aws_s3_bucket_website_configuration" "webapp_bucket_website" {
+  bucket = aws_s3_bucket.webapp_bucket.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
+# CloudFront Origin Access Control
+resource "aws_cloudfront_origin_access_control" "webapp_oac" {
+  name                              = "webapp-oac"
+  description                       = "OAC for webapp S3 bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront Distribution
+resource "aws_cloudfront_distribution" "webapp_distribution" {
+  origin {
+    domain_name              = aws_s3_bucket.webapp_bucket.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.webapp_oac.id
+    origin_id                = "webapp-s3-origin"
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "webapp-s3-origin"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+  }
+
+  # Cache behavior for static assets
+  ordered_cache_behavior {
+    path_pattern     = "/assets/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "webapp-s3-origin"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+  # Handle SPA routing by redirecting everything to index.html
+  custom_error_response {
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name        = "WebAppDistribution"
+    Environment = "Dev"
+  }
+}
+
 # ECR Repository for Docker images
 resource "aws_ecr_repository" "app_repository" {
   name                 = var.ecr_repository_name

@@ -160,3 +160,34 @@ output "vpc_endpoint_sqs_id" {
   value       = aws_vpc_endpoint.sqs.id
   description = "ID of the SQS VPC endpoint"
 }
+
+# CloudFront and Webapp outputs
+output "webapp_bucket_name" {
+  value       = aws_s3_bucket.webapp_bucket.bucket
+  description = "Name of the S3 bucket for the webapp"
+}
+
+output "webapp_bucket_arn" {
+  value       = aws_s3_bucket.webapp_bucket.arn
+  description = "ARN of the S3 bucket for the webapp"
+}
+
+output "cloudfront_distribution_id" {
+  value       = aws_cloudfront_distribution.webapp_distribution.id
+  description = "ID of the CloudFront distribution"
+}
+
+output "cloudfront_distribution_arn" {
+  value       = aws_cloudfront_distribution.webapp_distribution.arn
+  description = "ARN of the CloudFront distribution"
+}
+
+output "webapp_url" {
+  value       = "https://${aws_cloudfront_distribution.webapp_distribution.domain_name}"
+  description = "URL of the webapp via CloudFront distribution"
+}
+
+output "cloudfront_domain_name" {
+  value       = aws_cloudfront_distribution.webapp_distribution.domain_name
+  description = "Domain name of the CloudFront distribution"
+}
