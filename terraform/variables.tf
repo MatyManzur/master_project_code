@@ -60,3 +60,9 @@ variable "prediction_url" {
   type        = string
   default     = "http://localhost:3000/predict"
 }
+
+variable "score_threshold" {
+  description = "Score threshold for object classification"
+  type        = number
+  default     = 0.38
+}

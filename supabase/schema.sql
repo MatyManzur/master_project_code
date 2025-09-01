@@ -102,3 +102,64 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION get_report_details(
+  report_uuid_param TEXT
+) RETURNS JSON AS $$
+DECLARE
+  report_record RECORD;
+  objects_array JSON;
+  result JSON;
+BEGIN
+  SELECT 
+    ST_X(location) as longitude,
+    ST_Y(location) as latitude,
+    report_uuid,
+    state,
+    reported_at,
+    processed_at,
+    address,
+    image_name,
+    description
+  INTO report_record
+  FROM reports 
+  WHERE report_uuid = report_uuid_param;
+
+  -- If no report found, return null
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT COALESCE(json_agg(
+    json_build_object(
+      'x1', x1,
+      'x2', x2,
+      'y1', y1,
+      'y2', y2,
+      'healthy_score', healthy_score,
+      'damaged_score', damaged_score
+    )
+  ), '[]'::json)
+  INTO objects_array
+  FROM objects o
+  JOIN reports r ON o.report_id = r.id
+  WHERE r.report_uuid = report_uuid_param;
+
+  result := json_build_object(
+    'location', json_build_object(
+      'lat', report_record.latitude,
+      'lng', report_record.longitude
+    ),
+    'report_uuid', report_record.report_uuid,
+    'state', report_record.state,
+    'reported_at', report_record.reported_at,
+    'processed_at', report_record.processed_at,
+    'address', report_record.address,
+    'image_name', report_record.image_name,
+    'description', report_record.description,
+    'objects', objects_array
+  );
+
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+

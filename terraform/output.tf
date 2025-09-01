@@ -76,6 +76,11 @@ output "submit_report_endpoint" {
   description = "HTTP API Gateway URL for submitting damage reports"
 }
 
+output "get_reports_endpoint" {
+  value       = "https://${aws_apigatewayv2_api.api_gateway.id}.execute-api.${var.region}.amazonaws.com/${aws_apigatewayv2_stage.api_gateway_stage.name}/reports"
+  description = "HTTP API Gateway URL for getting damage reports by UUID"
+}
+
 output "api_gateway_id" {
   value       = aws_apigatewayv2_api.api_gateway.id
   description = "ID of the HTTP API Gateway"

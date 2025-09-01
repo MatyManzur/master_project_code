@@ -718,6 +718,111 @@ resource "aws_lambda_permission" "report_validation_lambda_permission" {
   source_arn    = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*/*"
 }
 
+# IAM Role for report get Lambda function
+resource "aws_iam_role" "lambda_report_get_role" {
+  name = "lambda-report-get-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM Policy for report get Lambda function
+resource "aws_iam_policy" "lambda_report_get_policy" {
+  name        = "lambda-report-get-policy"
+  description = "Policy for Lambda to get reports from Supabase"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+# Attach policy to role
+resource "aws_iam_role_policy_attachment" "lambda_report_get_policy_attachment" {
+  role       = aws_iam_role.lambda_report_get_role.name
+  policy_arn = aws_iam_policy.lambda_report_get_policy.arn
+}
+
+# Create a zip file for the report get Lambda function
+data "archive_file" "lambda_report_get_zip" {
+  type        = "zip"
+  output_path = "report_get_lambda.zip"
+  source {
+    content  = file("${path.module}/report_get_lambda.py")
+    filename = "lambda_function.py"
+  }
+}
+
+# Lambda function for getting report details
+resource "aws_lambda_function" "report_get_lambda" {
+  filename      = data.archive_file.lambda_report_get_zip.output_path
+  function_name = "damage-report-getter"
+  role          = aws_iam_role.lambda_report_get_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.9"
+  timeout       = 30
+
+  source_code_hash = data.archive_file.lambda_report_get_zip.output_base64sha256
+
+  environment {
+    variables = {
+      SUPABASE_URL     = var.supabase_url
+      SUPABASE_KEY     = var.supabase_key
+      SCORE_THRESHOLD  = var.score_threshold
+    }
+  }
+
+  tags = {
+    Name        = "DamageReportGetter"
+    Environment = "Dev"
+  }
+}
+
+# API Gateway Integration with report get Lambda function
+resource "aws_apigatewayv2_integration" "report_get_integration" {
+  api_id = aws_apigatewayv2_api.api_gateway.id
+
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.report_get_lambda.invoke_arn
+}
+
+# Report get API Gateway Route
+resource "aws_apigatewayv2_route" "report_get_route" {
+  api_id    = aws_apigatewayv2_api.api_gateway.id
+  route_key = "GET /reports"
+  target    = "integrations/${aws_apigatewayv2_integration.report_get_integration.id}"
+}
+
+# Lambda Permission for API Gateway to invoke the report get Lambda function
+resource "aws_lambda_permission" "report_get_lambda_permission" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.report_get_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*/*"
+}
+
 # IAM Role for AWS Batch Service
 resource "aws_iam_role" "aws_batch_service_role" {
   name = "aws-batch-service-role"
