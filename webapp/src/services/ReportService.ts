@@ -1,5 +1,7 @@
 import { config } from '../config/environment';
 
+export const PROGRESS_STEPS = [33, 67, 100];
+
 export interface ReportData {
   image: string;
   location: {
@@ -82,13 +84,16 @@ export async function submitReport(
   imageDataUrl: string,
   location: { lat: number; lng: number },
   description?: string,
-  address?: string
+  address?: string,
+  onProgress?: (progress: number) => void
 ): Promise<SubmitReportResponse> {
   const imageFile = await dataUrlToFile(imageDataUrl, `damage-report-${Date.now()}.jpg`);
   
   const { uploadUrl, key } = await getPresignedUrl(imageFile.name, imageFile.type);
+  onProgress?.(PROGRESS_STEPS[0]);
   
   await uploadImageToS3(uploadUrl, imageFile);
+  onProgress?.(PROGRESS_STEPS[1]);
 
   const reportData: ReportData = {
     image: key,
@@ -101,5 +106,8 @@ export async function submitReport(
     address,
   };
 
-  return submitReportData(reportData);
+  const result = await submitReportData(reportData);
+  onProgress?.(PROGRESS_STEPS[2]);
+  
+  return result;
 }

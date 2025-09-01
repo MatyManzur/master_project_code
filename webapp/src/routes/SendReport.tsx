@@ -4,7 +4,8 @@ import {
   HStack, 
   Text, 
   VStack,
-  Spinner
+  Spinner,
+  Progress
 } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
 import { ImageFrame } from "../components/ImageFrame";
@@ -14,7 +15,10 @@ import type { LatLng } from "leaflet";
 import { LocationSelectorMap } from "../components/LocationSelectorMap";
 import { useNavigate } from "react-router-dom";
 import { toaster } from "../components/ui/toaster";
-import { submitReport as submitReportService } from "../services/ReportService";
+import { submitReport as submitReportService, PROGRESS_STEPS } from "../services/ReportService";
+
+const ANIMATION_DURATION_PER_STEP = 8000;
+const MAX_FIELD_LENGTH = 480;
 
 export function SendReport() {
   const { capturedImage, setReportUuid } = useReport();
@@ -23,9 +27,8 @@ export function SendReport() {
   const [description, setDescription] = useState<string>('');
   const [confirmAction, setConfirmAction] = useState<'back' | 'discard' | 'submit' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
   const navigate = useNavigate();
-
-  const MAX_FIELD_LENGTH = 480;
 
   // Automatically navigate to home if no image is captured
   useEffect(() => {
@@ -80,14 +83,36 @@ export function SendReport() {
     if (!selectedLocation || !capturedImage) return;
     
     setIsSubmitting(true);
+    setSubmitProgress(0);
+
+    const animateProgress = (startProgress: number, targetProgress: number) => {
+      const progressDiff = targetProgress - startProgress;
+      const duration = ANIMATION_DURATION_PER_STEP;
+      const steps = 100;
+      const stepDuration = duration / steps;
+      const stepIncrement = progressDiff / steps;
+
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        const newProgress = startProgress + (stepIncrement * currentStep);
+        
+        if (currentStep >= steps || newProgress >= targetProgress) {
+          setSubmitProgress(targetProgress);
+          clearInterval(interval);
+        } else {
+          setSubmitProgress(newProgress);
+        }
+      }, stepDuration);
+
+      return interval;
+    };
+
+    const getNextProgressStep = (currentProgress: number): number => {
+      return PROGRESS_STEPS.find(step => step > currentProgress) || PROGRESS_STEPS[PROGRESS_STEPS.length - 1];
+    };
     
     try {
-      toaster.create({
-        title: "Submitting report...", // i18n
-        type: "loading",
-        id: "submit-report"
-      });
-      
       const trimmedDescription = (description.trim().length > MAX_FIELD_LENGTH)
         ? description.trim().slice(0, MAX_FIELD_LENGTH)
         : (description.trim() || undefined);
@@ -96,19 +121,36 @@ export function SendReport() {
         ? address.slice(0, MAX_FIELD_LENGTH)
         : (address || undefined);
 
+      let currentInterval: NodeJS.Timeout | null = animateProgress(0, PROGRESS_STEPS[0]);
+
       const response = await submitReportService(
         capturedImage,
         { lat: selectedLocation.lat, lng: selectedLocation.lng },
         trimmedDescription,
-        trimmedAddress
+        trimmedAddress,
+        (progress) => {
+          if (currentInterval) {
+            clearInterval(currentInterval);
+            currentInterval = null;
+          }
+          
+          setSubmitProgress(progress);
+          
+          const finalStep = PROGRESS_STEPS[PROGRESS_STEPS.length - 1];
+          if (progress < finalStep) {
+            const nextTarget = getNextProgressStep(progress);
+            currentInterval = animateProgress(progress, nextTarget);
+          }
+        }
       );
       
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+      
       setReportUuid(response.report_uuid);
-      toaster.dismiss("submit-report");
       navigate('/report-success');
     } catch (err) {
-      toaster.dismiss("submit-report");
-      
       toaster.create({
         title: "Failed to submit report", // i18n
         description: err instanceof Error ? err.message : 'Please try again.', // i18n
@@ -117,6 +159,7 @@ export function SendReport() {
       });
     } finally {
       setIsSubmitting(false);
+      setSubmitProgress(0);
     }
   }
 
@@ -229,6 +272,55 @@ export function SendReport() {
           </HStack>
         </VStack>        
       </Box>
+      )}
+
+      {/* Progress Dialog */}
+      {isSubmitting && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="blackAlpha.600"
+          zIndex="overlay"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Box
+            bg="background"
+            color="onBackground"
+            boxShadow="xl"
+            borderRadius="md"
+            p={8}
+            maxW="sm"
+            w="90%"
+            zIndex="modal"
+          >
+            <VStack gap={6} align="stretch">
+              <VStack gap={4}>
+                <Spinner size="lg" color="primary" />
+                <Text fontSize="lg" fontWeight="bold" textAlign="center">
+                  Submitting report... {/* i18n */}
+                </Text>
+              </VStack>
+              
+              <VStack gap={2}>
+                <Progress.Root 
+                  value={submitProgress} 
+                  w="100%" 
+                  colorPalette="yellow"
+                  size="lg"
+                >
+                  <Progress.Track bg="surface" borderRadius="full">
+                    <Progress.Range />
+                  </Progress.Track>
+                </Progress.Root>
+              </VStack>
+            </VStack>
+          </Box>
+        </Box>
       )}
 
       {/* Confirmation Dialog */}
