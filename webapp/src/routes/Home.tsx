@@ -14,17 +14,99 @@ export function Home() {
   const [facingMode, setFacingMode] = useState('environment'); // 'user' for front, 'environment' for back
   const [error, setError] = useState('');
   const [cameraState, setCameraState] = useState<'initial' | 'streaming' | 'captured' | 'permission-denied'>('initial');
+  // Estados para zoom
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(1);
+  const [isZooming, setIsZooming] = useState(false);
+  const [lastTouchDistance, setLastTouchDistance] = useState(0);
+  
   const navigate = useNavigate();
   const { setCapturedImage: setContextImage } = useReport();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<(MediaStream | null)>(null);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const applyZoom = async (newZoomLevel: number) => {
+    if (!streamRef.current) return;
+    
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    const capabilities = videoTrack.getCapabilities() as any;
+    if (capabilities.zoom) {
+      const clampedZoom = Math.max(capabilities.zoom.min || 1, 
+                                  Math.min(capabilities.zoom.max || 1, newZoomLevel));
+      
+      try {
+        await videoTrack.applyConstraints({
+          advanced: [{ zoom: clampedZoom } as any]
+        });
+        setZoomLevel(clampedZoom);
+      } catch (err) {
+        console.warn('Failed to apply zoom:', err);
+      }
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      setIsZooming(true);
+      setLastTouchDistance(getTouchDistance(e.touches));
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isZooming || e.touches.length !== 2) return;
+    
+    e.preventDefault();
+    
+    const currentDistance = getTouchDistance(e.touches);
+    if (lastTouchDistance > 0) {
+      const scale = currentDistance / lastTouchDistance;
+      const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * scale));
+      applyZoom(newZoom);
+    }
+    setLastTouchDistance(currentDistance);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      setIsZooming(false);
+      setLastTouchDistance(0);
+    }
+  };
+
+  const setupCameraCapabilities = () => {
+    if (!streamRef.current) return;
+    
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (videoTrack) {
+      const capabilities = videoTrack.getCapabilities() as any;
+      if (capabilities.zoom) {
+        setMaxZoom(capabilities.zoom.max || 3);
+      } else {
+        setMaxZoom(1); // Sin soporte de zoom
+      }
+    }
+  };
 
   const startCameraWithMode = async (mode: string) => {
     try {
       setError('');
       setCameraState('streaming');
+      setZoomLevel(1);
       // Request camera permissions
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -39,6 +121,9 @@ export function Home() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          setupCameraCapabilities();
+        };
       }
     } catch (err: any) {
       console.error('Error accessing camera:', err);
@@ -86,6 +171,7 @@ export function Home() {
     stopCamera();
     const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
     setFacingMode(newFacingMode);
+    setZoomLevel(1);
     setTimeout(() => startCameraWithMode(newFacingMode), 100);
   };
 
@@ -93,6 +179,7 @@ export function Home() {
     setCapturedImage(null);
     setRotationAngle(0);
     setError('');
+    setZoomLevel(1);
     setCameraState('initial');
   };
 
@@ -233,18 +320,45 @@ export function Home() {
       {cameraState === 'streaming' && (
         <Box position="fixed" top={0} left={0} right={0} bottom={0} bg="black" zIndex={2000}>
           <Box position="relative" w="full" h="full">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                transform: 'none'
-              }}
-            />
+            <Box
+              ref={videoContainerRef}
+              w="full"
+              h="full"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{ touchAction: 'none' }} // Prevenir scroll/zoom del navegador
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transform: 'none'
+                }}
+              />
+            </Box>
+            
+            {/* zoom indicator */}
+            {zoomLevel > 1 && (
+              <Box
+                position="absolute"
+                top={16}
+                right={8}
+                bg="surface"
+                color="onSurface"
+                px={3}
+                py={1}
+                borderRadius="full"
+                fontSize="sm"
+              >
+                {zoomLevel.toFixed(1)}x
+              </Box>
+            )}
             
             <Box position="absolute" bottom={8} left={0} right={0} display="flex" justifyContent="center" gap={4}>
               <Button
