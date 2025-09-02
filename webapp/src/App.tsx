@@ -6,6 +6,7 @@ import { BottomNav } from './components/BottomNav'
 import { SendReport } from './routes/SendReport'
 import { ReportSuccess } from './routes/ReportSuccess'
 import { Toaster } from './components/ui/toaster'
+import { MyReports } from './routes/MyReports'
 
 function App() {
   const location = useLocation()
@@ -19,6 +20,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/send-report" element={<SendReport />} />
           <Route path="/report-success" element={<ReportSuccess />} />
+          <Route path="/reports" element={<MyReports />} />
           <Route path="*" element={<Text>404 Not Found</Text>} />
           </Routes>
       </Box>

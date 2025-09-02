@@ -56,7 +56,7 @@ Response format for GET /reports:
       "reported_at": "2024-01-01T12:00:00Z",
       "processed_at": "2024-01-01T12:05:00Z",
       "address": "123 Main St",
-      "image_name": "reports/20240101_120000_xyz.jpg",
+      "image_url": "https://pepito.com/reports/20240101_120000_xyz.jpg",
       "description": "Damage report description",
       "objects": [
         {

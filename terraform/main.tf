@@ -752,6 +752,13 @@ resource "aws_iam_policy" "lambda_report_get_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = "${aws_s3_bucket.images_bucket.arn}/*"
       }
     ]
   })
@@ -789,6 +796,7 @@ resource "aws_lambda_function" "report_get_lambda" {
       SUPABASE_URL     = var.supabase_url
       SUPABASE_KEY     = var.supabase_key
       SCORE_THRESHOLD  = var.score_threshold
+      BUCKET_NAME      = var.bucket_name
     }
   }
 

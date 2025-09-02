@@ -12,7 +12,10 @@ const config = defineConfig({
     semanticTokens: {
       colors: {
         background: {
-          value: { base: '#FFFFFF', _dark: '#111827' },
+          value: { base: '#FFFFFF', _dark: '#110808ff' },
+        },
+        onBackground: {
+          value: { base: '#111827', _dark: '#F9FAFB' },
         },
         surface: {
           value: { base: '#fbf9f9ff', _dark: '#371f1fff' },

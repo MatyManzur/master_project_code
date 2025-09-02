@@ -2,6 +2,8 @@ import json
 import os
 import urllib.request
 import urllib.parse
+import boto3
+from botocore.exceptions import ClientError
 from typing import List, Dict, Any, Optional
 
 SUPABASE_RPC_ENDPOINT = "/rest/v1/rpc/get_report_details"
@@ -10,9 +12,10 @@ DEFAULT_SCORE_THRESHOLD = 0.38
 def lambda_handler(event, context):
     supabase_url = os.environ.get('SUPABASE_URL')
     supabase_key = os.environ.get('SUPABASE_KEY')
+    bucket_name = os.environ.get('BUCKET_NAME')
     score_threshold = float(os.environ.get('SCORE_THRESHOLD', DEFAULT_SCORE_THRESHOLD))
     
-    if not supabase_url or not supabase_key:
+    if not supabase_url or not supabase_key or not bucket_name:
         return {
             'statusCode': 500,
             'headers': {
@@ -21,7 +24,7 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Methods': 'GET, OPTIONS'
             },
             'body': json.dumps({
-                'error': 'Missing Supabase configuration'
+                'error': 'Missing Supabase or S3 configuration'
             })
         }
     
@@ -51,9 +54,23 @@ def lambda_handler(event, context):
             }
         
         reports = []
+        s3_client = boto3.client('s3')
+        
         for uuid in report_uuids:
             report_data = get_report_from_supabase(supabase_url, supabase_key, uuid)
             if report_data:
+                # Generate presigned URL for the image
+                image_name = report_data.get('image_name')
+                if image_name and image_name.strip():
+                    presigned_url = generate_presigned_url(s3_client, bucket_name, image_name)
+                    if presigned_url:
+                        report_data['image_url'] = presigned_url
+                    if 'image_name' in report_data:
+                        del report_data['image_name']
+                else:
+                    if 'image_name' in report_data:
+                        del report_data['image_name']
+                
                 processed_objects = process_objects(report_data.get('objects', []), score_threshold)
                 report_data['objects'] = processed_objects
                 reports.append(report_data)
@@ -175,3 +192,34 @@ def process_objects(objects: List[Dict[str, Any]], threshold: float) -> List[Dic
             })
     
     return processed_objects
+
+
+def generate_presigned_url(s3_client, bucket_name: str, image_name: str, expires_in: int = 3600) -> Optional[str]:
+    """
+    Generate a presigned URL for viewing an image in S3
+    
+    Args:
+        s3_client: boto3 S3 client
+        bucket_name: Name of the S3 bucket
+        image_name: Key/name of the image in S3
+        expires_in: URL expiration time in seconds (default 1 hour)
+    
+    Returns:
+        Presigned URL string or None if generation fails
+    """
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': image_name
+            },
+            ExpiresIn=expires_in
+        )
+        return presigned_url
+    except ClientError as e:
+        print(f"Error generating presigned URL for {image_name}: {str(e)}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error generating presigned URL for {image_name}: {str(e)}")
+        return None

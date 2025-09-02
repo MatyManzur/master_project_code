@@ -1,3 +1,4 @@
+import type { LatLng } from 'leaflet';
 import { config } from '../config/environment';
 
 export const PROGRESS_STEPS = [33, 67, 100];
@@ -23,6 +24,26 @@ interface SubmitReportResponse {
   message: string;
   report_uuid: string;
   status: string;
+}
+
+export interface TrafficSign {
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
+  tag: 'DAMAGED' | 'HEALTHY';
+}
+
+export interface Report {
+  location: LatLng;
+  report_uuid: string;
+  state: 'new' | 'processed';
+  reported_at: string;
+  processed_at: string;
+  address: string;
+  image_url: string;
+  description: string;
+  objects: TrafficSign[];
 }
 
 async function getPresignedUrl(fileName: string, contentType: string): Promise<UploadUrlResponse> {
@@ -80,6 +101,48 @@ async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
   return new File([blob], fileName, { type: blob.type });
 }
 
+export async function getReportsByUuid(uuids: string[]): Promise<Report[]> {
+  if (!uuids.length) {
+    return [];
+  }
+
+  const searchParams = new URLSearchParams();
+  uuids.forEach(uuid => {
+    const sanitizedUuid = encodeURIComponent(uuid.trim());
+    searchParams.append('uuid', sanitizedUuid);
+  });
+
+  const response = await fetch(`${config.API_GATEWAY_URL}/reports?${searchParams.toString()}`, {
+    method: 'GET',
+  });
+
+  if (response.status === 204) {
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reports: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawReports = data.reports || [];
+  
+  return rawReports.map((rawReport: any): Report => ({
+    location: {
+      lat: rawReport.location.lat,
+      lng: rawReport.location.lng,
+    } as LatLng,
+    report_uuid: rawReport.report_uuid,
+    state: rawReport.state,
+    reported_at: rawReport.reported_at,
+    processed_at: rawReport.processed_at,
+    address: rawReport.address,
+    image_url: rawReport.image_url,
+    description: rawReport.description,
+    objects: rawReport.objects || [],
+  }));
+}
+
 export async function submitReport(
   imageDataUrl: string,
   location: { lat: number; lng: number },
@@ -111,3 +174,4 @@ export async function submitReport(
   
   return result;
 }
+
