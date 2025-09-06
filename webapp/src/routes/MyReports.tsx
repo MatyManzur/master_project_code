@@ -49,62 +49,65 @@ export function MyReports() {
     };
 
     return (
-        <Box bg="background" minH="100vh" color="onBg">
+        <Box bg="background" height="100vh" color="onBg">
             <ActionBar
                 title="My Reports" // i18n
                 showBackButton={false}
             />
+            
+            {/* Fixed search bar */}
+            <Box position="fixed" top="8vh" left={0} right={0} zIndex={99} bg="background" px={4} py={4}>
+                <HStack gap={2}>
+                    <Box position="relative" flex={1}>
+                        <Input
+                            placeholder="Enter report UUID to add..." // i18n
+                            value={searchUuid}
+                            onChange={(e) => setSearchUuid(e.target.value)}
+                            bg="surface"
+                            borderColor="border"
+                            color="onSurface"
+                            _placeholder={{ color: "textSecondary" }}
+                            _focus={{ borderColor: "primary", boxShadow: "0 0 0 1px var(--chakra-colors-primary)" }}
+                            pr={searchUuid ? "40px" : "12px"}
+                        />
+                        {searchUuid && (
+                            <IconButton
+                                onClick={handleClearInput}
+                                position="absolute"
+                                right="8px"
+                                top="50%"
+                                transform="translateY(-50%)"
+                                size="sm"
+                                variant="ghost"
+                                color="textSecondary"
+                                _hover={{ color: "onSurface" }}
+                                aria-label="Clear input"
+                            >
+                                <HiX />
+                            </IconButton>
+                        )}
+                    </Box>
+                    <IconButton
+                        onClick={() => handleAddUuid(searchUuid)}
+                        disabled={!searchUuid.trim()}
+                        bg="primary"
+                        color="onPrimary"
+                        _hover={{ opacity: 0.8 }}
+                        _disabled={{ 
+                            bg: "disabled", 
+                            color: "textSecondary",
+                            cursor: "not-allowed"
+                        }}
+                        aria-label="Add report"
+                    >
+                        <HiPlus />
+                    </IconButton>
+                </HStack>
+            </Box>
 
-            <ReactPullToRefresh 
-                onRefresh={handleRefresh}
-            >
-                <VStack gap={4} padding={4} pb={28} align="stretch">
-                    <HStack gap={2}>
-                        <Box position="relative" flex={1}>
-                            <Input
-                                placeholder="Enter report UUID to add..." // i18n
-                                value={searchUuid}
-                                onChange={(e) => setSearchUuid(e.target.value)}
-                                bg="surface"
-                                borderColor="border"
-                                color="onSurface"
-                                _placeholder={{ color: "textSecondary" }}
-                                _focus={{ borderColor: "primary", boxShadow: "0 0 0 1px var(--chakra-colors-primary)" }}
-                                pr={searchUuid ? "40px" : "12px"}
-                            />
-                            {searchUuid && (
-                                <IconButton
-                                    onClick={handleClearInput}
-                                    position="absolute"
-                                    right="8px"
-                                    top="50%"
-                                    transform="translateY(-50%)"
-                                    size="sm"
-                                    variant="ghost"
-                                    color="textSecondary"
-                                    _hover={{ color: "onSurface" }}
-                                    aria-label="Clear input"
-                                >
-                                    <HiX />
-                                </IconButton>
-                            )}
-                        </Box>
-                        <IconButton
-                            onClick={() => handleAddUuid(searchUuid)}
-                            disabled={!searchUuid.trim()}
-                            bg="primary"
-                            color="onPrimary"
-                            _hover={{ opacity: 0.8 }}
-                            _disabled={{ 
-                                bg: "disabled", 
-                                color: "textSecondary",
-                                cursor: "not-allowed"
-                            }}
-                            aria-label="Add report"
-                        >
-                            <HiPlus />
-                        </IconButton>
-                    </HStack>
+            {/* Scrollable content area */}
+            <Box pt="8vh"  overflowY="auto">
+                <VStack gap={4} pt={6} px={4} pb={28} align="stretch">
 
                     <Box id="report-list">
                         {isLoading ? (
@@ -140,7 +143,7 @@ export function MyReports() {
                         )}
                     </Box>
                 </VStack>
-            </ReactPullToRefresh>
+            </Box>
         </Box>
     );
 }
