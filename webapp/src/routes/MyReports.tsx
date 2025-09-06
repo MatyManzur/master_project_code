@@ -106,7 +106,7 @@ export function MyReports() {
                         </IconButton>
                     </HStack>
 
-                    <Box>
+                    <Box id="report-list">
                         {isLoading ? (
                             <Box display="flex" justifyContent="center" p={8}>
                                 <Spinner color="primary" size="lg" />

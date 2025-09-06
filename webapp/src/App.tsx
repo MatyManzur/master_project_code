@@ -7,6 +7,7 @@ import { SendReport } from './routes/SendReport'
 import { ReportSuccess } from './routes/ReportSuccess'
 import { Toaster } from './components/ui/toaster'
 import { MyReports } from './routes/MyReports'
+import { ReportDetail } from './routes/ReportDetail'
 
 function App() {
   const location = useLocation()
@@ -21,7 +22,8 @@ function App() {
           <Route path="/send-report" element={<SendReport />} />
           <Route path="/report-success" element={<ReportSuccess />} />
           <Route path="/reports" element={<MyReports />} />
-          <Route path="*" element={<Text>404 Not Found</Text>} />
+          <Route path="/reports/:uuid" element={<ReportDetail />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
       </Box>
       {!hideBottomNav && <BottomNav />}

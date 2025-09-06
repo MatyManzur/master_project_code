@@ -9,6 +9,7 @@ interface ReportContextType {
   addReportUuid: (uuid: string) => void;
   getReports: () => Report[];
   refreshReports: () => Promise<void>;
+  getReportByUuid: (uuid: string) => Promise<Report | null>;
 }
 
 const ReportContext = createContext<ReportContextType | undefined>(undefined);
@@ -18,50 +19,63 @@ const STORAGE_KEY = 'report_uuids';
 export function ReportProvider({ children }: { children: React.ReactNode }) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [reportUuid, setReportUuid] = useState<string | null>(null);
-  const [reportUuids, setReportUuids] = useState<string[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
-
-  const loadReportsFromStorage = () => {
-    const storedUuids = localStorage.getItem(STORAGE_KEY);
-    if (storedUuids) {
-      try {
-        const uuids = JSON.parse(storedUuids);
-        if (Array.isArray(uuids)) {
-          setReportUuids(uuids);
-        }
-      } catch (error) {
-        console.error('Failed to parse stored UUIDs:', error);
-      }
-    }
-  }
-
-  useEffect(() => {
-    loadReportsFromStorage();
-  }, []);
 
   const addReportUuid = async (uuid: string) => {
     return new Promise<void>((resolve) => {
-      setReportUuids(prevUuids => {
-        if (prevUuids.includes(uuid)) {
-          resolve();
-          return prevUuids;
+      const storedUuids = localStorage.getItem(STORAGE_KEY);
+      let uuids: string[] = [];
+      
+      if (storedUuids) {
+        try {
+          const parsedUuids = JSON.parse(storedUuids);
+          if (Array.isArray(parsedUuids)) {
+            uuids = parsedUuids;
+          }
+        } catch (error) {
+          console.error('Failed to parse stored UUIDs:', error);
         }
-        const newUuids = [uuid, ...prevUuids];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newUuids));
-        
-        setTimeout(async () => {
-          await refreshReports();
-          resolve();
-        }, 0);
+      }
+      if (uuids.includes(uuid)) {
+        resolve();
+        return uuids;
+      }
+      const newUuids = [uuid, ...uuids];
+      console.log('Updated UUIDs:', newUuids);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUuids));
+      
+      setTimeout(async () => {
+        await refreshReports();
+        resolve();
+      }, 0);
 
-        return newUuids;
-      });
+      return newUuids;
     });
   };
 
   const getReports = () => {
     return reports;
   };
+
+  const getReportByUuid = async (uuid: string): Promise<Report | null> => {
+    const existingReport = reports.find(report => report.report_uuid === uuid);
+    if (existingReport) {
+      return existingReport;
+    }
+
+    try {
+      await addReportUuid(uuid);
+      const report = await getReportsByUuid([uuid]);
+      if (report.length > 0) {
+        return report[0];
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Failed to fetch report by UUID:', error);
+      return null;
+    }
+  }
 
   const refreshReports = async () => {
     const storedUuids = localStorage.getItem(STORAGE_KEY);
@@ -99,7 +113,8 @@ export function ReportProvider({ children }: { children: React.ReactNode }) {
       setReportUuid, 
       addReportUuid, 
       getReports, 
-      refreshReports 
+      refreshReports,
+      getReportByUuid
     }}>
       {children}
     </ReportContext.Provider>

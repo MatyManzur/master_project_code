@@ -21,6 +21,12 @@ export function ReportSuccess() {
     navigate('/home');
   }
 
+  function handleSeeReport() {
+    if (reportUuid) {
+      navigate(`/reports/${reportUuid}`);
+    }
+  }
+
   return (
     <>
       <ActionBar
@@ -38,6 +44,16 @@ export function ReportSuccess() {
           <Text fontSize="md" color="gray.600">
             It will be processed soon.
           </Text>   {/* i18n */}
+          <Button
+            color="onPrimary"
+            bg="primary"
+            _hover={{ bg: 'onPrimary', color: 'primary' }}
+            onClick={handleSeeReport}
+            size="lg"
+            mt={4}
+          >
+            See this report
+          </Button> {/* i18n */}
           <Button
             color="onSecondary"
             bg="secondary"

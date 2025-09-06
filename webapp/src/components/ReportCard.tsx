@@ -1,4 +1,5 @@
 import { Card, HStack, Text, VStack } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
 import { ImageFrame } from "./ImageFrame";
 
 interface ReportCardProps {
@@ -12,9 +13,24 @@ interface ReportCardProps {
 export function ReportCard(
     props: ReportCardProps
 ) {
+    const navigate = useNavigate();
+
+    const handleClick = () => {
+        navigate(`/reports/${props.uuid}`);
+    };
+
     return (
         <>
-            <Card.Root variant='elevated' size='sm' bg="surface" borderColor="border" color="onSurface">
+            <Card.Root 
+                variant='elevated' 
+                size='sm' 
+                bg="surface" 
+                borderColor="border" 
+                color="onSurface"
+                cursor="pointer"
+                _hover={{ bg: "focus", color: "onFocus" }}
+                onClick={handleClick}
+            >
                 <Card.Body w="full" h="full">
                     <HStack maxH="15vh" justifyContent={"space-between"} w="full" alignItems="flex-start">
                         <VStack maxW={"50%"} alignItems="flex-start">
