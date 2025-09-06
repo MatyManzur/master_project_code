@@ -21,7 +21,7 @@ export function ReportProvider({ children }: { children: React.ReactNode }) {
   const [reportUuids, setReportUuids] = useState<string[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
 
-  useEffect(() => {
+  const loadReportsFromStorage = () => {
     const storedUuids = localStorage.getItem(STORAGE_KEY);
     if (storedUuids) {
       try {
@@ -33,18 +33,30 @@ export function ReportProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to parse stored UUIDs:', error);
       }
     }
+  }
+
+  useEffect(() => {
+    loadReportsFromStorage();
   }, []);
 
-  const addReportUuid = (uuid: string) => {
-    setReportUuids(prevUuids => {
-      if (prevUuids.includes(uuid)) {
-        return prevUuids;
-      }
-      const newUuids = [uuid, ...prevUuids];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUuids));
-      return newUuids;
+  const addReportUuid = async (uuid: string) => {
+    return new Promise<void>((resolve) => {
+      setReportUuids(prevUuids => {
+        if (prevUuids.includes(uuid)) {
+          resolve();
+          return prevUuids;
+        }
+        const newUuids = [uuid, ...prevUuids];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newUuids));
+        
+        setTimeout(async () => {
+          await refreshReports();
+          resolve();
+        }, 0);
+
+        return newUuids;
+      });
     });
-    refreshReports();
   };
 
   const getReports = () => {
@@ -52,13 +64,27 @@ export function ReportProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshReports = async () => {
-    if (reportUuids.length === 0) {
+    const storedUuids = localStorage.getItem(STORAGE_KEY);
+    let uuids: string[] = [];
+    
+    if (storedUuids) {
+      try {
+        const parsedUuids = JSON.parse(storedUuids);
+        if (Array.isArray(parsedUuids)) {
+          uuids = parsedUuids;
+        }
+      } catch (error) {
+        console.error('Failed to parse stored UUIDs:', error);
+      }
+    }
+    
+    if (uuids.length === 0) {
       setReports([]);
       return;
     }
     
     try {
-      const fetchedReports = await getReportsByUuid(reportUuids);
+      const fetchedReports = await getReportsByUuid(uuids);
       setReports(fetchedReports);
     } catch (error) {
       console.error('Failed to refresh reports:', error);

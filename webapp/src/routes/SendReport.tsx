@@ -21,7 +21,7 @@ const ANIMATION_DURATION_PER_STEP = 8000;
 const MAX_FIELD_LENGTH = 480;
 
 export function SendReport() {
-  const { capturedImage, setReportUuid } = useReport();
+  const { capturedImage, setReportUuid, addReportUuid } = useReport();
   const [address, setAddress] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
   const [description, setDescription] = useState<string>('');
@@ -149,6 +149,7 @@ export function SendReport() {
       }
       
       setReportUuid(response.report_uuid);
+      addReportUuid(response.report_uuid);
       navigate('/report-success');
     } catch (err) {
       toaster.create({
