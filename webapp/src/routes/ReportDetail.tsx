@@ -11,11 +11,13 @@ import {
   Button,
   Separator
 } from "@chakra-ui/react";
-import { HiLocationMarker, HiCalendar, HiPhotograph } from "react-icons/hi";
+import { HiLocationMarker, HiCalendar, HiPhotograph, HiDocumentText } from "react-icons/hi";
 import ActionBar from "../components/ActionBar";
 import { ImageFrame } from "../components/ImageFrame";
 import { useReport } from "../providers/ReportProvider";
 import { type Report } from "../services/ReportService";
+import { StaticLocationMap } from "../components/StaticLocationMap";
+import { HiChatBubbleLeftEllipsis } from "react-icons/hi2";
 
 export function ReportDetail() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -61,7 +63,7 @@ export function ReportDetail() {
   };
 
   const getStatusColor = (state: string) => {
-    return state === 'new' ? 'warning' : 'success';
+    return state === 'new' ? ['warning', 'onWarning'] : ['success', 'onSuccess'];
   };
 
   const getStatusText = (state: string) => {
@@ -117,12 +119,12 @@ export function ReportDetail() {
             <VStack gap={4} align="stretch">
               <HStack justify="space-between" align="flex-start">
                 <VStack align="flex-start" flex={1}>
-                  <Text fontSize="sm" color="textSecondary">Report ID</Text>
+                  <Text fontSize="sm" color="textSecondary">Report ID</Text> {/* i18n */}
                   <Text fontSize="md" fontWeight="bold" wordBreak="break-all">
                     {report.report_uuid}
                   </Text>
                 </VStack>
-                <Badge colorPalette={getStatusColor(report.state)} size="lg">
+                <Badge bg={getStatusColor(report.state)[0]} color={getStatusColor(report.state)[1]} size="lg">
                   {getStatusText(report.state)}
                 </Badge>
               </HStack>
@@ -130,51 +132,56 @@ export function ReportDetail() {
               <Separator />
 
               <VStack align="stretch" gap={3}>
-                <HStack>
+                <HStack alignItems={"flex-start"}>
                   <HiCalendar />
-                  <VStack align="flex-start" gap={1}>
-                    <Text fontSize="sm" color="textSecondary">Submitted</Text>
+                  <VStack align="flex-start" gap={1} mt={'-2px'}>
+                    <Text fontSize="sm" fontWeight="bold" color="textSecondary">Submitted</Text> {/* i18n */}
                     <Text fontSize="sm">{formatDate(report.reported_at)}</Text>
                   </VStack>
                 </HStack>
 
                 {report.processed_at && (
-                  <HStack>
+                  <HStack alignItems={"flex-start"}>
                     <HiCalendar />
-                    <VStack align="flex-start" gap={1}>
-                      <Text fontSize="sm" color="textSecondary">Processed</Text>
+                    <VStack align="flex-start" gap={1} mt={'-2px'}>
+                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">Processed</Text> {/* i18n */}
                       <Text fontSize="sm">{formatDate(report.processed_at)}</Text>
                     </VStack>
                   </HStack>
                 )}
 
-                <HStack>
-                  <HiLocationMarker />
-                  <VStack align="flex-start" gap={1}>
-                    <Text fontSize="sm" color="textSecondary">Location</Text>
-                    <Text fontSize="sm">{report.address}</Text>
-                    <Text fontSize="xs" color="textSecondary">
-                      {report.location.lat.toFixed(6)}, {report.location.lng.toFixed(6)}
-                    </Text>
-                  </VStack>
-                </HStack>
+                {report.description && (
+                  <HStack alignItems={"flex-start"}>
+                    <HiChatBubbleLeftEllipsis />
+                    <VStack align="flex-start" gap={1} mt={'-2px'}>
+                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">Description</Text> {/* i18n */}
+                      <Text fontSize="sm">
+                        {report.description}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                )}
+
+                
               </VStack>
             </VStack>
           </Card.Body>
         </Card.Root>
 
-        {report.description && (
-          <Card.Root variant="elevated" bg="surface" borderColor="border">
-            <Card.Body>
-              <VStack align="stretch" gap={2}>
-                <Text fontSize="md" fontWeight="bold">Description</Text>
-                <Text fontSize="sm" color="textSecondary">
-                  {report.description}
-                </Text>
+        <Card.Root variant="elevated" bg="surface" borderColor="border">
+          <Card.Body>
+            <VStack align="stretch" gap={4}>
+              <HStack>
+                <HiLocationMarker />
+                <Text fontSize="md" fontWeight="bold">Location</Text> {/* i18n */}
+              </HStack>
+              <VStack align="flex-start" gap={1}>
+                <Text fontSize="sm"><b>Address:</b> {report.address}</Text> {/* i18n */}
+                <Box w="full" h="40vh"><StaticLocationMap position={report.location} /></Box>
               </VStack>
-            </Card.Body>
-          </Card.Root>
-        )}
+            </VStack>
+          </Card.Body>
+        </Card.Root>
 
         <Card.Root variant="elevated" bg="surface" borderColor="border">
           <Card.Body>
@@ -187,38 +194,18 @@ export function ReportDetail() {
                 imageSrc={report.image_url} 
                 imageAlt="Report Image" 
                 maxHeight="40vh"
+                boundingBoxes={report.objects ? report.objects.map(obj => ({
+                  x1: obj.x1,
+                  y1: obj.y1,
+                  x2: obj.x2,
+                  y2: obj.y2,
+                  label: obj.tag,
+                  color: obj.tag === 'DAMAGED' ? 'red' : 'green'
+                })) : []}
               />
             </VStack>
           </Card.Body>
         </Card.Root>
-
-        {report.objects && report.objects.length > 0 && (
-          <Card.Root variant="elevated" bg="surface" borderColor="border">
-            <Card.Body>
-              <VStack align="stretch" gap={4}>
-                <Text fontSize="md" fontWeight="bold">Detected Objects</Text>
-                <VStack gap={2} align="stretch">
-                  {report.objects.map((obj, index) => (
-                    <Box key={index} p={3} bg="background" borderRadius="md">
-                      <HStack justify="space-between">
-                        <Text fontSize="sm">Object {index + 1}</Text>
-                        <Badge 
-                          colorPalette={obj.tag === 'DAMAGED' ? 'error' : 'success'}
-                          size="sm"
-                        >
-                          {obj.tag}
-                        </Badge>
-                      </HStack>
-                      <Text fontSize="xs" color="textSecondary" mt={1}>
-                        Position: ({obj.x1}, {obj.y1}) to ({obj.x2}, {obj.y2})
-                      </Text>
-                    </Box>
-                  ))}
-                </VStack>
-              </VStack>
-            </Card.Body>
-          </Card.Root>
-        )}
       </VStack>
     </Box>
   );

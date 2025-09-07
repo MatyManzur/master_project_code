@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
-import { Box, Text } from '@chakra-ui/react'
+import { Box } from '@chakra-ui/react'
 import { Home } from './routes/Home'
 import { BottomNav } from './components/BottomNav'
 import { SendReport } from './routes/SendReport'

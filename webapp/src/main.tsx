@@ -47,11 +47,20 @@ const config = defineConfig({
         success: {
           value: { base: '#16A34A', _dark: '#22C55E' },
         },
+        onSuccess: {
+          value: { base: '#FFFFFF', _dark: '#212121' },
+        },
         warning: {
-          value: { base: '#D97706', _dark: '#F59E0B' },
+          value: { base: '#c26a06ff', _dark: '#F59E0B' },
+        },
+        onWarning: {
+          value: { base: '#FFFFFF', _dark: '#212121' },
         },
         error: {
           value: { base: '#DC2626', _dark: '#EF4444' },
+        },
+        onError: {
+          value: { base: '#FFFFFF', _dark: '#FFFFFF' },
         },
         info: {
           value: { base: '#0284C7', _dark: '#38BDF8' },

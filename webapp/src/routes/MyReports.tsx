@@ -4,11 +4,10 @@ import { HiX, HiPlus } from "react-icons/hi";
 import ActionBar from "../components/ActionBar";
 import { ReportCard } from "../components/ReportCard";
 import { useReport } from "../providers/ReportProvider";
-import ReactPullToRefresh from 'react-pull-to-refresh';
 
 export function MyReports() {
     const { getReports, refreshReports, addReportUuid } = useReport();
-    const [isRefreshing, setIsRefreshing] = useState(false);
+    //const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchUuid, setSearchUuid] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
@@ -27,11 +26,11 @@ export function MyReports() {
         }
     }, []);
 
-    const handleRefresh = async () => {
+    /*const handleRefresh = async () => {
         setIsRefreshing(true);
         await refreshReports();
         setIsRefreshing(false);
-    };
+    };*/
 
     const handleAddUuid = async (uuid: string) => {
         if (uuid.trim()) {
@@ -114,7 +113,7 @@ export function MyReports() {
                             <Box display="flex" justifyContent="center" p={8}>
                                 <Spinner color="primary" size="lg" />
                             </Box>
-                        ) : isRefreshing ? (
+                        ) : false /*isRefreshing */ ? (
                             <Box display="flex" justifyContent="center" p={4}>
                                 <Spinner color="primary" size="md" />
                             </Box>
