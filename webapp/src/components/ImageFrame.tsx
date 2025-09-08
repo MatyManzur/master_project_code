@@ -1,5 +1,6 @@
 import { Box, Skeleton, Text } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface BoundingBox {
     x1: number;
@@ -24,6 +25,8 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
     const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
     const [displayDimensions, setDisplayDimensions] = useState({ width: 0, height: 0 });
     const imageRef = useRef<HTMLImageElement>(null);
+
+    const { t } = useTranslation();
 
     const handleImageLoad = () => {
         if (imageRef.current) {
@@ -142,7 +145,7 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
                             whiteSpace="nowrap"
                             transform={position.top < 24 ? `translateY(${position.height + 24}px)` : 'none'}
                         >
-                            <Text fontSize="xs">{bbox.label}</Text> {/* i18n */}
+                            <Text fontSize="xs">{bbox.label}</Text>
                         </Box>
                     </Box>
                 );
@@ -160,7 +163,7 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
                 bg="gray.100"
                 color="gray.500"
             >
-                Failed to load image {/* i18n */}
+                {t('Failed to load image')}
             </Box>
         )}
     </Box>);

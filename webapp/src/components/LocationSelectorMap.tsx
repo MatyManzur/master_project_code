@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { Box, Button, Flex, Spinner, Text } from "@chakra-ui/react";
 import { LatLng } from "leaflet";
 import { HiLocationMarker } from "react-icons/hi";
+import { useTranslation } from "react-i18next";
 
 
 
@@ -11,6 +12,8 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
   const [position, setPosition] = useState<LatLng | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPermissionDenied, setIsPermissionDenied] = useState(false);
+
+  const { t } = useTranslation();
 
   function MapEvents({ setPosition, onLocationChange }: { setPosition: (pos: LatLng) => void, onLocationChange?: (pos: LatLng) => void }) {
     useMapEvents({
@@ -41,16 +44,16 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
         (err) => {          
           if (err.code === err.PERMISSION_DENIED) {
             setIsPermissionDenied(true);
-            setError("Location permission was denied. Please grant location access to continue."); //i18n!!
+            setError(t("Location permission was denied_ Please grant location access to continue_"));
           } else {
             setError(() => {
-              switch(err.code) { //i18n!!
+              switch(err.code) {
                 case err.POSITION_UNAVAILABLE:
-                  return "Location information is unavailable in this device.";
+                  return t("Location information is unavailable in this device_");
                 case err.TIMEOUT:
-                  return "The request to get user location timed out.";
+                  return t("The request to get user location timed out_");
                 default:
-                  return "An unknown error occurred while fetching location.";
+                  return t("An unknown error occurred while fetching location_");
               }
             });
           }
@@ -102,13 +105,13 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
           gap={4}
         >
           <Spinner size="xl" color="blue.500" />
-          <Box>📍 Obtaining Location...</Box> {/* i18n */}
+          <Box>📍 {t('Obtaining Location___')}</Box>
         </Flex>
       )}
       {error && (
         <Box p={4} w="80%" m="0 auto 0 auto">
           <Box bg="error" color="background" p={4} borderRadius="md">
-            <Text fontWeight="bold">Location Error</Text> {/* i18n */}
+            <Text fontWeight="bold">{t('Location Error')}</Text>
             <Text mb={isPermissionDenied ? 3 : 0}>{error}</Text>
             {isPermissionDenied && (
               <Button
@@ -119,7 +122,7 @@ export function LocationSelectorMap({ onLocationChange }: { onLocationChange?: (
                 onClick={requestLocation}
               >
                 <HiLocationMarker />
-                <Text ml={2}>Grant Location Access</Text> {/* i18n */}
+                <Text ml={2}>{t('Grant Location Access')}</Text>
               </Button>
             )}
           </Box>

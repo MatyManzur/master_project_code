@@ -1,6 +1,7 @@
 import { Card, HStack, Text, VStack } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { ImageFrame } from "./ImageFrame";
+import { useTranslation } from "react-i18next";
 
 interface ReportCardProps {
     uuid: string;
@@ -19,6 +20,8 @@ export function ReportCard(
         navigate(`/reports/${props.uuid}`);
     };
 
+    const { t } = useTranslation();
+
     return (
         <>
             <Card.Root 
@@ -35,13 +38,13 @@ export function ReportCard(
                     <HStack maxH="15vh" justifyContent={"space-between"} w="full" alignItems="flex-start">
                         <VStack maxW={"50%"} alignItems="flex-start">
                             <Text fontSize={"md"} fontWeight={"bold"}>{props.uuid}</Text>
-                            <Text fontSize={"sm"}>Submitted: {props.submitted_at.toLocaleString()}</Text> {/* i18n */}
+                            <Text fontSize={"sm"}>{t('Submitted')}: {props.submitted_at.toLocaleString()}</Text>
                             <HStack>
                                 <Text fontSize={"md"} fontWeight="bold">
-                                    Status:
-                                </Text> {/* i18n */}
+                                    {t('Status')}:
+                                </Text>
                                 <Text fontSize={"md"} fontWeight="bold" color={props.status === 'submitted' ? 'warning' : 'success'}>
-                                    {props.status === 'submitted' ? 'Submitted' : 'Processed'}
+                                    {props.status === 'submitted' ? t('Submitted') : t('Processed')}
                                 </Text>
                             </HStack>
                         </VStack>
@@ -51,7 +54,7 @@ export function ReportCard(
                         
                     </HStack>
                     <VStack maxW={"100%"} alignItems="flex-start" mt={2}>
-                        <Text fontSize={"sm"}>Location: {props.address ?? ""}</Text> {/* i18n */}                        
+                        <Text fontSize={"sm"}>{t('Location')}: {props.address ?? ""}</Text>                       
                     </VStack>
                 </Card.Body>
             </Card.Root>

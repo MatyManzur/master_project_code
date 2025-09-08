@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReport } from "../providers/ReportProvider";
 import { ImageFrame } from "../components/ImageFrame";
+import { useTranslation } from "react-i18next";
 
 export function Home() {
 
@@ -27,6 +28,8 @@ export function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<(MediaStream | null)>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const { t } = useTranslation();
 
   const getTouchDistance = (touches: React.TouchList) => {
     if (touches.length < 2) return 0;
@@ -129,11 +132,11 @@ export function Home() {
       console.error('Error accessing camera:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         // Permission was denied
-        setError('Camera permission was denied. Please grant camera access to continue.'); // i18n
+        setError(t('Camera permission was denied_ Please grant camera access to continue_'));
         setCameraState('permission-denied');
       } else {
         // Other errors (device not found, etc.)
-        setError('Unable to access camera. Please ensure you have granted camera permissions.'); // i18n
+        setError(t('Unable to access camera_ Please ensure you have granted camera permissions_'));
         setCameraState('initial');
       }
     }
@@ -197,7 +200,7 @@ export function Home() {
 
   function onNewReport() {
     if (!isCameraSupported) {
-      setError('Camera is not supported on this device.'); // i18n
+      setError(t('Camera is not supported on this device_'));
       return;
     }
     startCameraWithMode(facingMode);
@@ -259,12 +262,12 @@ export function Home() {
 
   return (
     <>
-      <ActionBar title="New Report" /> {/* i18n */}
+      <ActionBar title={t("New Report")} />
       
       {error && (
         <Box p={4}>
           <Box bg="error" color="background" p={4} borderRadius="md">
-            <Text fontWeight="bold">Error</Text> {/* i18n */}
+            <Text fontWeight="bold">{t('Error')}</Text>
             <Text>{error}</Text>
           </Box>
         </Box>
@@ -282,8 +285,8 @@ export function Home() {
             >
               <HiCamera/>
               <Text fontSize="lg" fontWeight="extrabold">
-                Report damage
-              </Text>{/* i18n */}
+                {t('Report damage')}
+              </Text>
             </Button>
           </Box>                   
       </VStack>
@@ -294,11 +297,11 @@ export function Home() {
           <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={10}>
             <VStack gap={4} textAlign="center">
               <HiCamera size={64} color="gray" />
-              <Text fontSize="xl" fontWeight="bold">Camera Permission Required</Text> {/* i18n */}
+              <Text fontSize="xl" fontWeight="bold">{t('Camera Permission Required')}</Text>
               <Text color="gray.600" px={4}> 
-                We need access to your camera to take photos of damage. 
-                Please grant camera permission to continue.
-              </Text> {/* i18n */}
+                {t('We need access to your camera to take photos of damage_')}
+                {t('Please grant camera permission to continue_')}
+              </Text>
               <Button 
                 bg="secondary" 
                 color="onSecondary" 
@@ -310,7 +313,7 @@ export function Home() {
                 onClick={retryCamera}
               >
                 <HiCamera />
-                <Text ml={2}>Grant Camera Access</Text> {/* i18n */}
+                <Text ml={2}>{t('Grant Camera Access')}</Text>
               </Button>
             </VStack>
           </Box>
@@ -413,7 +416,7 @@ export function Home() {
               mb={3}
             >
               <Text fontSize="sm" textAlign="center">
-                Please ensure the image is properly oriented before proceeding. Use the rotate button if needed. {/* i18n */}
+                {t('Please ensure the image is properly oriented before proceeding_ Use the rotate button if needed_')}
               </Text>
             </Box>
             
@@ -429,7 +432,7 @@ export function Home() {
               <Box transform={`rotate(${rotationAngle}deg)`} transition="transform 0.3s ease">
                 <ImageFrame
                   imageSrc={capturedImage}
-                  imageAlt="Captured damage"
+                  imageAlt={t("Captured damage")}
                   maxHeight={"40vh"}
                 />
               </Box>
@@ -446,7 +449,7 @@ export function Home() {
                 }}
               >
                 <MdRotateRight />
-                <Text ml={2}>Rotate</Text> {/* i18n */}
+                <Text ml={2}>{t('Rotate')}</Text>
               </Button>
             </Box>
             
@@ -463,7 +466,7 @@ export function Home() {
                 }}
               >
                 <HiCheck />
-                <Text ml={2}>Keep picture</Text> {/* i18n */}
+                <Text ml={2}>{t('Keep picture')}</Text>
               </Button>
               
               <Button
@@ -475,7 +478,7 @@ export function Home() {
                 }}
               >
                 <HiRefresh />
-                <Text ml={2}>Try again</Text> {/* i18n */}
+                <Text ml={2}>{t('Try again')}</Text>
               </Button>
             </Box>
             
@@ -487,7 +490,7 @@ export function Home() {
               mt={3}
             >
               <Text fontSize="xs" textAlign="center">
-                Please ensure no personal or sensitive information is visible in this image as it may be publicly accessible. {/* i18n */}
+                {t('Please ensure no personal or sensitive information is visible in this image as it may be publicly accessible_')}
               </Text>
             </Box>
           </Box>

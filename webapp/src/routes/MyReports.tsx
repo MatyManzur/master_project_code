@@ -4,12 +4,14 @@ import { HiX, HiPlus } from "react-icons/hi";
 import ActionBar from "../components/ActionBar";
 import { ReportCard } from "../components/ReportCard";
 import { useReport } from "../providers/ReportProvider";
+import { useTranslation } from "react-i18next";
 
 export function MyReports() {
     const { getReports, refreshReports, addReportUuid } = useReport();
     //const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchUuid, setSearchUuid] = useState("");
     const [isLoading, setIsLoading] = useState(true);
+    const { t } = useTranslation();
 
     let reports = getReports();
 
@@ -50,7 +52,7 @@ export function MyReports() {
     return (
         <Box bg="background" height="100vh" color="onBg">
             <ActionBar
-                title="My Reports" // i18n
+                title={t("My Reports")}
                 showBackButton={false}
             />
             
@@ -59,7 +61,7 @@ export function MyReports() {
                 <HStack gap={2}>
                     <Box position="relative" flex={1}>
                         <Input
-                            placeholder="Enter report UUID to add..." // i18n
+                            placeholder={t("Enter report UUID to add___")}
                             value={searchUuid}
                             onChange={(e) => setSearchUuid(e.target.value)}
                             bg="surface"
@@ -80,7 +82,7 @@ export function MyReports() {
                                 variant="ghost"
                                 color="textSecondary"
                                 _hover={{ color: "onSurface" }}
-                                aria-label="Clear input"
+                                aria-label={t("Clear input")}
                             >
                                 <HiX />
                             </IconButton>
@@ -97,7 +99,7 @@ export function MyReports() {
                             color: "textSecondary",
                             cursor: "not-allowed"
                         }}
-                        aria-label="Add report"
+                        aria-label={t("Add report")}
                     >
                         <HiPlus />
                     </IconButton>
@@ -120,10 +122,10 @@ export function MyReports() {
                         ) : reports.length === 0 ? (
                             <Box textAlign="center" p={8}>
                                 <Text color="textSecondary" fontSize="lg">
-                                    No reports found {/* i18n */}
+                                    {t('No reports found')}
                                 </Text>
                                 <Text color="textSecondary" fontSize="sm" mt={2}>
-                                    Add a report UUID above to get started {/* i18n */}
+                                    {t('Add a report UUID above to get started')}
                                 </Text>
                             </Box>
                         ) : (

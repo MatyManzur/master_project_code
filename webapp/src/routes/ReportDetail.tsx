@@ -11,13 +11,14 @@ import {
   Button,
   Separator
 } from "@chakra-ui/react";
-import { HiLocationMarker, HiCalendar, HiPhotograph, HiDocumentText } from "react-icons/hi";
+import { HiLocationMarker, HiCalendar, HiPhotograph } from "react-icons/hi";
 import ActionBar from "../components/ActionBar";
 import { ImageFrame } from "../components/ImageFrame";
 import { useReport } from "../providers/ReportProvider";
 import { type Report } from "../services/ReportService";
 import { StaticLocationMap } from "../components/StaticLocationMap";
 import { HiChatBubbleLeftEllipsis } from "react-icons/hi2";
+import { useTranslation } from "react-i18next";
 
 export function ReportDetail() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -27,10 +28,12 @@ export function ReportDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { t } = useTranslation();
+
   useEffect(() => {
     const loadReport = async () => {
       if (!uuid) {
-        setError("Report not found"); //i18n
+        setError(t("Report not found"));
         setIsLoading(false);
         return;
       }
@@ -41,10 +44,10 @@ export function ReportDetail() {
         if (fetchedReport) {
           setReport(fetchedReport);
         } else {
-          setError("Report not found"); //i18n
+          setError(t("Report not found"));
         }
       } catch (err) {
-        setError("Failed to load report"); //i18n
+        setError(t("Failed to load report"));
         console.error("Error loading report:", err);
       } finally {
         setIsLoading(false);
@@ -67,14 +70,14 @@ export function ReportDetail() {
   };
 
   const getStatusText = (state: string) => {
-    return state === 'new' ? 'Submitted' : 'Processed'; //i18n
+    return state === 'new' ? t('Submitted') : t('Processed');
   };
 
   if (isLoading) {
     return (
       <Box bg="background" minH="100vh" color="onBg">
         <ActionBar
-          title="Report Details" // i18n
+          title={t("Report Details")}
           showBackButton={true}
           onBack={handleBack}
         />
@@ -89,17 +92,17 @@ export function ReportDetail() {
     return (
       <Box bg="background" minH="100vh" color="onBg">
         <ActionBar
-          title="Report Details" // i18n
+          title={t("Report Details")}
           showBackButton={true}
           onBack={handleBack}
         />
         <Box textAlign="center" p={8}>
           <Text color="error" fontSize="lg" mb={4}>
-            {error || "Report not found"}{/* i18n */}
+            {error || t("Report not found")}
           </Text>
           <Button onClick={handleBack} variant="outline">
-            Go Back
-          </Button> {/* i18n */}
+            {t('Go Back')}
+          </Button>
         </Box>
       </Box>
     );
@@ -108,7 +111,7 @@ export function ReportDetail() {
   return (
     <Box bg="background" minH="100vh" color="onBg">
       <ActionBar
-        title="Report Details" // i18n
+        title={t("Report Details")}
         showBackButton={true}
         onBack={handleBack}
       />
@@ -119,7 +122,7 @@ export function ReportDetail() {
             <VStack gap={4} align="stretch">
               <HStack justify="space-between" align="flex-start">
                 <VStack align="flex-start" flex={1}>
-                  <Text fontSize="sm" color="textSecondary">Report ID</Text> {/* i18n */}
+                  <Text fontSize="sm" color="textSecondary">{t('Report ID')}</Text>
                   <Text fontSize="md" fontWeight="bold" wordBreak="break-all">
                     {report.report_uuid}
                   </Text>
@@ -135,7 +138,7 @@ export function ReportDetail() {
                 <HStack alignItems={"flex-start"}>
                   <HiCalendar />
                   <VStack align="flex-start" gap={1} mt={'-2px'}>
-                    <Text fontSize="sm" fontWeight="bold" color="textSecondary">Submitted</Text> {/* i18n */}
+                    <Text fontSize="sm" fontWeight="bold" color="textSecondary">{t('Submitted')}</Text>
                     <Text fontSize="sm">{formatDate(report.reported_at)}</Text>
                   </VStack>
                 </HStack>
@@ -144,7 +147,7 @@ export function ReportDetail() {
                   <HStack alignItems={"flex-start"}>
                     <HiCalendar />
                     <VStack align="flex-start" gap={1} mt={'-2px'}>
-                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">Processed</Text> {/* i18n */}
+                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">{t('Processed')}</Text>
                       <Text fontSize="sm">{formatDate(report.processed_at)}</Text>
                     </VStack>
                   </HStack>
@@ -154,7 +157,7 @@ export function ReportDetail() {
                   <HStack alignItems={"flex-start"}>
                     <HiChatBubbleLeftEllipsis />
                     <VStack align="flex-start" gap={1} mt={'-2px'}>
-                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">Description</Text> {/* i18n */}
+                      <Text fontSize="sm" fontWeight="bold" color="textSecondary">{t('Description')}</Text>
                       <Text fontSize="sm">
                         {report.description}
                       </Text>
@@ -173,10 +176,10 @@ export function ReportDetail() {
             <VStack align="stretch" gap={4}>
               <HStack>
                 <HiLocationMarker />
-                <Text fontSize="md" fontWeight="bold">Location</Text> {/* i18n */}
+                <Text fontSize="md" fontWeight="bold">{t('Location')}</Text>
               </HStack>
               <VStack align="flex-start" gap={1}>
-                <Text fontSize="sm"><b>Address:</b> {report.address}</Text> {/* i18n */}
+                <Text fontSize="sm"><b>{t('Address')}:</b> {report.address}</Text>
                 <Box w="full" h="40vh"><StaticLocationMap position={report.location} /></Box>
               </VStack>
             </VStack>
@@ -188,18 +191,18 @@ export function ReportDetail() {
             <VStack align="stretch" gap={4}>
               <HStack>
                 <HiPhotograph />
-                <Text fontSize="md" fontWeight="bold">Report Image</Text>
+                <Text fontSize="md" fontWeight="bold">{t('Report Image')}</Text>
               </HStack>
               <ImageFrame 
                 imageSrc={report.image_url} 
-                imageAlt="Report Image" 
+                imageAlt={t('"Report Image"')} 
                 maxHeight="40vh"
                 boundingBoxes={report.objects ? report.objects.map(obj => ({
                   x1: obj.x1,
                   y1: obj.y1,
                   x2: obj.x2,
                   y2: obj.y2,
-                  label: obj.tag,
+                  label: t(obj.tag),
                   color: obj.tag === 'DAMAGED' ? 'red' : 'green'
                 })) : []}
               />

@@ -16,6 +16,7 @@ import { LocationSelectorMap } from "../components/LocationSelectorMap";
 import { useNavigate } from "react-router-dom";
 import { toaster } from "../components/ui/toaster";
 import { submitReport as submitReportService, PROGRESS_STEPS } from "../services/ReportService";
+import { useTranslation } from "react-i18next";
 
 const ANIMATION_DURATION_PER_STEP = 8000;
 const MAX_FIELD_LENGTH = 480;
@@ -29,6 +30,7 @@ export function SendReport() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitProgress, setSubmitProgress] = useState(0);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Automatically navigate to home if no image is captured
   useEffect(() => {
@@ -153,8 +155,8 @@ export function SendReport() {
       navigate('/report-success');
     } catch (err) {
       toaster.create({
-        title: "Failed to submit report", // i18n
-        description: err instanceof Error ? err.message : 'Please try again.', // i18n
+        title: t("Failed to submit report"),
+        description: err instanceof Error ? err.message : t('Please try again'),
         type: "error",
         duration: 5000,
       });
@@ -177,7 +179,7 @@ export function SendReport() {
 
   function onLocationChange(pos: LatLng) {
     setSelectedLocation(pos);
-    setAddress('Loading address...'); // i18n
+    setAddress(t('Loading address___'));
     reverseGeocode(pos.lat, pos.lng)
       .then(setAddress)
       .catch((err) => {
@@ -189,20 +191,20 @@ export function SendReport() {
   return (
     <>
       <ActionBar
-        title="Send Report"
+        title={t("Send Report")}
         showBackButton={true}
         onBack={onBack}
-      ></ActionBar>{/* i18n */}
+      ></ActionBar>
       {capturedImage && (
       <Box w='full' alignContent={'center'} justifyContent={'flex-start'} display={'flex'} mt={4}>
         <VStack w='full'>
           <HStack gap="4vw" maxH="30vh" justifyContent={'space-between'} alignItems={'flex-start'}>
             <VStack alignItems="flex-start" gap={'1em'} justifyContent={'flex-start'} maxW="50vw" ml="0vw">
-              <Text fontSize="xl" fontWeight="bold">New Report</Text> {/* i18n */}
+              <Text fontSize="xl" fontWeight="bold">{t('New Report')}</Text>
               <Box w="full">
-                <Text mb={1}>Description (optional):</Text> {/* i18n */}
+                <Text mb={1}>{t('Description _optional_')}:</Text>
                 <textarea
-                  placeholder="Describe the damage..." // i18n
+                  placeholder={t("Describe the damage___")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   style={{
@@ -218,7 +220,7 @@ export function SendReport() {
             </VStack>
             <ImageFrame
               imageSrc={capturedImage}
-              imageAlt="Captured damage"
+              imageAlt={t("Captured damage")}
               maxWidth="40vw"
               maxHeight="25vh"
             />
@@ -250,7 +252,7 @@ export function SendReport() {
               disabled={isSubmitting}
               size="xl"
             >
-              Discard Report
+              {t('Discard Report')}
             </Button>
             <Button
               flex={1}
@@ -264,10 +266,10 @@ export function SendReport() {
               {isSubmitting ? (
                 <HStack gap={2}>
                   <Spinner size="sm" />
-                  <Text>Submitting...</Text>
+                  <Text>{t('Submitting___')}</Text>
                 </HStack>
               ) : (
-                'Submit Report'
+                t('Submit Report')
               )}
             </Button>
           </HStack>
@@ -303,7 +305,7 @@ export function SendReport() {
               <VStack gap={4}>
                 <Spinner size="lg" color="primary" />
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                  Submitting report... {/* i18n */}
+                  {t('Submitting report___')}
                 </Text>
               </VStack>
               
@@ -352,15 +354,15 @@ export function SendReport() {
           >
             <VStack gap={4} align="stretch">
               <Text fontSize="lg" fontWeight="bold">
-                {confirmAction === 'back' && 'Discard Report'} {/* i18n */}
-                {confirmAction === 'discard' && 'Discard Report'} {/* i18n */}
-                {confirmAction === 'submit' && 'Submit Report'} {/* i18n */}
+                {confirmAction === 'back' && t('Discard Report')}
+                {confirmAction === 'discard' && t('Discard Report')} 
+                {confirmAction === 'submit' && t('Submit Report')} 
               </Text>
               
               <Text>
-                {confirmAction === 'back' && 'Are you sure you want to go back? Any unsaved changes will be lost.'} {/* i18n */}
-                {confirmAction === 'discard' && 'Are you sure you want to discard this report? This action cannot be undone.'} {/* i18n */}
-                {confirmAction === 'submit' && 'Are you sure you want to submit this report?'} {/* i18n */}
+                {confirmAction === 'back' && t('Are you sure you want to go back_q Any unsaved changes will be lost_')}
+                {confirmAction === 'discard' && t('Are you sure you want to discard this report_q This action cannot be undone_')}
+                {confirmAction === 'submit' && t('Are you sure you want to submit this report_q')}
               </Text>
               
               <HStack gap={3} justify="flex-end">
@@ -376,9 +378,9 @@ export function SendReport() {
                   _hover={{ bg: 'onPrimary', color: 'primary' }}
                   onClick={confirmAndExecuteAction}
                 >
-                  {confirmAction === 'back' && 'Discard'} {/* i18n */}
-                  {confirmAction === 'discard' && 'Discard'} {/* i18n */}
-                  {confirmAction === 'submit' && 'Submit'} {/* i18n */}
+                  {confirmAction === 'back' && t('Discard')}
+                  {confirmAction === 'discard' && t('Discard')}
+                  {confirmAction === 'submit' && t('Submit')}
                 </Button>
               </HStack>
             </VStack>

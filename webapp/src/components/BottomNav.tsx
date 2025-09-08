@@ -1,5 +1,6 @@
 import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { HiDocumentCheck, HiDocumentPlus } from "react-icons/hi2"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -8,14 +9,15 @@ export function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('/home')
+  const { t } = useTranslation()
   
   useEffect(() => {
     setActiveTab(location.pathname)
   }, [location.pathname])
 
   const navItems = [
-    { path: '/home', label: 'New Report', icon: HiDocumentPlus }, //i18n
-    { path: '/reports', label: 'My Reports', icon: HiDocumentCheck }, //i18n
+    { path: '/home', label: t('New Report'), icon: HiDocumentPlus },
+    { path: '/reports', label: t('My Reports'), icon: HiDocumentCheck },
   ]
 
   const handleNavigation = (path: string) => {

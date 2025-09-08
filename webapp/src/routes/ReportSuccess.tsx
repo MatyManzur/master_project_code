@@ -3,10 +3,13 @@ import ActionBar from "../components/ActionBar";
 import { useNavigate } from "react-router-dom";
 import { useReport } from "../providers/ReportProvider";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export function ReportSuccess() {
   const navigate = useNavigate();
   const { setCapturedImage, reportUuid, setReportUuid } = useReport();
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     setCapturedImage(null);
@@ -30,20 +33,20 @@ export function ReportSuccess() {
   return (
     <>
       <ActionBar
-        title="Report Submitted" 
+        title={t("Report Submitted")}
         showBackButton={false}
-      /> {/* i18n */}
+      />
       <Box w="100vw" alignContent="center" justifyContent="center" display="flex" mt={8}>
         <VStack gap={6} maxW="80vw" textAlign="center">
           <Text fontSize="2xl" fontWeight="bold" color="primary">
-            Report submitted successfully!
-          </Text> {/* i18n */}
+            {t('Report submitted successfully_e')}
+          </Text>
           <Text fontSize="lg">
-            Report number: <Text as="span" fontWeight="bold">{reportUuid || 'N/A'}</Text>
-          </Text> {/* i18n */}
+            {t('Report ID')}: <Text as="span" fontWeight="bold">{reportUuid || 'N/A'}</Text>
+          </Text>
           <Text fontSize="md" color="gray.600">
-            It will be processed soon.
-          </Text>   {/* i18n */}
+            {t('It will be processed soon_')}
+          </Text>
           <Button
             color="onPrimary"
             bg="primary"
@@ -52,8 +55,8 @@ export function ReportSuccess() {
             size="lg"
             mt={4}
           >
-            See this report
-          </Button> {/* i18n */}
+            {t('See this report')}
+          </Button>
           <Button
             color="onSecondary"
             bg="secondary"
@@ -62,8 +65,8 @@ export function ReportSuccess() {
             size="lg"
             mt={4}
           >
-            Start New Report
-          </Button> {/* i18n */}
+            {t('Start New Report')}
+          </Button>
         </VStack>
       </Box>
     </>
