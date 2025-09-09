@@ -62,5 +62,7 @@
   "The request to get user location timed out_": "Die Anfrage zur Ermittlung des Standorts ist zeitlich abgelaufen.",
   "Try again": "Erneut versuchen",
   "Unable to access camera_ Please ensure you have granted camera permissions_": "Auf die Kamera kann nicht zugegriffen werden. Bitte stellen Sie sicher, dass Sie Kameraberechtigungen erteilt haben.",
-  "We need access to your camera to take photos of damage_": "Wir benötigen Zugriff auf Ihre Kamera, um Fotos des Schadens zu machen."
+  "We need access to your camera to take photos of damage_": "Wir benötigen Zugriff auf Ihre Kamera, um Fotos des Schadens zu machen.",
+  "Upload picture from device": "Bild vom Gerät hochladen",
+  "or": "oder"
 }

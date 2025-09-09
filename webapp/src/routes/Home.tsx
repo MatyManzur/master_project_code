@@ -1,6 +1,6 @@
 import { Box, Button, Text, VStack } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
-import { HiCamera, HiCheck, HiRefresh, HiX } from "react-icons/hi";
+import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload } from "react-icons/hi";
 import { MdRotateRight } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,7 @@ export function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<(MediaStream | null)>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { t } = useTranslation();
 
@@ -206,6 +207,32 @@ export function Home() {
     startCameraWithMode(facingMode);
   }
 
+  function onUploadPicture() {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setCapturedImage(result);
+          setCameraState('captured');
+          setRotationAngle(0);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
   function retryCamera() {
     setError('');
     startCameraWithMode(facingMode);
@@ -274,7 +301,7 @@ export function Home() {
       )}
 
       {cameraState === 'initial' && (
-        <VStack>
+        <VStack gap={8}>
           <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={20}>
             <Button bg="secondary" color="onSecondary" size="2xl" 
               _hover={{
@@ -288,7 +315,32 @@ export function Home() {
                 {t('Report damage')}
               </Text>
             </Button>
-          </Box>                   
+          </Box>
+          <Text color="textSecondary" fontWeight={'thin'}>{t('or')}</Text>
+          <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'}>
+            <Button 
+              variant="outline" 
+              size="xl"
+              _hover={{
+                bg: 'surface',
+              }}
+              onClick={onUploadPicture}
+            >
+              <HiUpload/>
+              <Text fontSize="md" fontWeight="bold">
+                {t('Upload picture from device')}
+              </Text>
+            </Button>
+          </Box>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
       </VStack>
       )}
 
@@ -315,7 +367,29 @@ export function Home() {
                 <HiCamera />
                 <Text ml={2}>{t('Grant Camera Access')}</Text>
               </Button>
+              <Text color="textSecondary" fontWeight={'thin'}>{t('or')}</Text>
+              <Button 
+                variant="outline" 
+                size="xl"
+                _hover={{
+                  bg: 'surface',
+                }}
+                onClick={onUploadPicture}
+              >
+                <HiUpload/>
+                <Text fontSize="md" fontWeight="bold">
+                  {t('Upload picture from device')}
+                </Text>
+              </Button>
             </VStack>
+              {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
           </Box>
         </VStack>
       )}

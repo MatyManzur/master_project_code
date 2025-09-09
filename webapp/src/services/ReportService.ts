@@ -3,6 +3,9 @@ import { config } from '../config/environment';
 
 export const PROGRESS_STEPS = [33, 67, 100];
 
+export const MAX_IMAGE_SIZE = 1024;
+export const IMAGE_QUALITY = 0.9;
+
 export interface ReportData {
   image: string;
   location: {
@@ -101,6 +104,49 @@ async function dataUrlToFile(dataUrl: string, fileName: string): Promise<File> {
   return new File([blob], fileName, { type: blob.type });
 }
 
+async function resizeImageIfNeeded(dataUrl: string, maxSize: number = MAX_IMAGE_SIZE): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        // If canvas context is not available, return original
+        resolve(dataUrl);
+        return;
+      }
+
+      const { width, height } = img;
+      const maxDimension = Math.max(width, height);
+      
+      if (maxDimension <= maxSize) {
+        resolve(dataUrl);
+        return;
+      }
+
+      const scale = maxSize / maxDimension;
+      const newWidth = Math.round(width * scale);
+      const newHeight = Math.round(height * scale);
+
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+      const resizedDataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+      resolve(resizedDataUrl);
+    };
+
+    img.onerror = () => {
+      // If there's an error loading the image, return original
+      resolve(dataUrl);
+    };
+
+    img.src = dataUrl;
+  });
+}
+
 export async function getReportsByUuid(uuids: string[]): Promise<Report[]> {
   if (!uuids.length) {
     return [];
@@ -150,7 +196,9 @@ export async function submitReport(
   address?: string,
   onProgress?: (progress: number) => void
 ): Promise<SubmitReportResponse> {
-  const imageFile = await dataUrlToFile(imageDataUrl, `damage-report-${Date.now()}.jpg`);
+  
+  const resizedImageDataUrl = await resizeImageIfNeeded(imageDataUrl);
+  const imageFile = await dataUrlToFile(resizedImageDataUrl, `damage-report-${Date.now()}.jpg`);
   
   const { uploadUrl, key } = await getPresignedUrl(imageFile.name, imageFile.type);
   onProgress?.(PROGRESS_STEPS[0]);
