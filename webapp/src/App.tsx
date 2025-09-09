@@ -47,7 +47,7 @@ function App() {
 
   return (
     <>
-      <Box overflowX={'hidden'} width="100vw">
+      <Box overflowX={'hidden'} width="100vw"  pb={hideBottomNav ? 0 : '78px'}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />

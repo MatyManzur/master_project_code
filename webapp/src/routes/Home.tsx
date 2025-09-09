@@ -1,12 +1,13 @@
-import { Box, Button, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
-import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload } from "react-icons/hi";
+import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload, HiInformationCircle } from "react-icons/hi";
 import { MdRotateRight } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReport } from "../providers/ReportProvider";
 import { ImageFrame } from "../components/ImageFrame";
 import { useTranslation } from "react-i18next";
+import { HiExclamationTriangle } from "react-icons/hi2";
 
 export function Home() {
 
@@ -480,18 +481,23 @@ export function Home() {
       )}
 
       {cameraState === 'captured' && capturedImage && (
-        <Box p={4}>
-          <Box w="full" maxW="sm" mx="auto">
+        <Box py={4} px={'10vw'} w="100vw">
+          <Box w="full"  mx="auto" h="full">
+            
             <Box 
-              bg="info" 
+              bg="warning" 
               color="background"
               p={3} 
               borderRadius="md"
               mb={3}
             >
-              <Text fontSize="sm" textAlign="center">
-                {t('Please ensure the image is properly oriented before proceeding_ Use the rotate button if needed_')}
-              </Text>
+              <HStack>
+                <HiExclamationTriangle size='36px' />
+                <Text fontSize="xs" textAlign="center">
+                  {t('Please ensure no personal or sensitive information is visible in this image as it may be publicly accessible_')}
+                </Text>
+              </HStack>
+              
             </Box>
             
             {/* Container with extra space for rotated images */}
@@ -499,50 +505,66 @@ export function Home() {
               display="flex" 
               justifyContent="center" 
               alignItems="center"
-              minHeight="50vh"
+              h="40vh"
+              w="40vh"
               overflow="hidden"
               mb={4}
+              mx='auto'
             >
-              <Box transform={`rotate(${rotationAngle}deg)`} transition="transform 0.3s ease">
+              <Box transform={`rotate(${rotationAngle}deg)`} transition="transform 0.3s ease" m='auto' w='full' h='full'  >
                 <ImageFrame
                   imageSrc={capturedImage}
                   imageAlt={t("Captured damage")}
-                  maxHeight={"40vh"}
+                  maxHeight="40vh"
+                  maxWidth="40vh"
                 />
               </Box>
             </Box>
             
-            {/* Rotate button above other buttons */}
-            <Box display="flex" justifyContent="center" mb={3}>
+            <HStack justifyContent="center" alignItems={'center'} gap={3} mb={3}>
               <Button
-                variant="outline"
+                //variant="outline"
                 size="lg"
                 onClick={rotateImage}
-                _hover={{
-                  bg: 'surface',
-                }}
-              >
-                <MdRotateRight />
-                <Text ml={2}>{t('Rotate')}</Text>
-              </Button>
-            </Box>
-            
-            {/* Main action buttons */}
-            <Box display="flex" gap={3} justifyContent="center" mb={4}>
-              <Button
-                bg="secondary"
-                color="onSecondary"
-                size="lg"
-                onClick={onKeepPicture}
+                bg='secondary'
+                color='onSecondary'
                 _hover={{
                   bg: 'onSecondary',
                   color: 'secondary',
                 }}
               >
-                <HiCheck />
-                <Text ml={2}>{t('Keep picture')}</Text>
+                <MdRotateRight />
+                <Text ml={2}>{t('Rotate')}</Text>
               </Button>
-              
+              <Box 
+                bg="info" 
+                color="background"
+                p={3} 
+                borderRadius="md"
+                w='80vw'
+                position="relative"
+              >
+                <HStack>
+                  <HiInformationCircle size='36px' />
+                  <Text fontSize="xs" textAlign="center">
+                    {t('Please ensure the image is properly oriented before proceeding_ Use the rotate button if needed_')}
+                  </Text>
+                </HStack>
+                <Box 
+                  bg="info"
+                  w='1.5vh'
+                  h='1.5vh'
+                  position='absolute'
+                  left='-0.75vh'
+                  top='50%'
+                  zIndex={-1}
+                  transform='translateY(-50%) rotate(45deg)'
+                > </Box> {/* little triangle */}
+                
+              </Box>
+            </HStack>
+            
+            <Box display="flex" gap={3} justifyContent="center" mb={4}>
               <Button
                 variant="outline"
                 size="lg"
@@ -554,19 +576,25 @@ export function Home() {
                 <HiRefresh />
                 <Text ml={2}>{t('Try again')}</Text>
               </Button>
+
+              <Button
+                bg="primary"
+                color="onPrimary"
+                size="lg"
+                onClick={onKeepPicture}
+                _hover={{
+                  bg: 'onPrimary',
+                  color: 'primary',
+                }}
+              >
+                <HiCheck />
+                <Text ml={2}>{t('Keep picture')}</Text>
+              </Button>
+              
+              
             </Box>
             
-            <Box 
-              bg="warning" 
-              color="background"
-              p={3} 
-              borderRadius="md"
-              mt={3}
-            >
-              <Text fontSize="xs" textAlign="center">
-                {t('Please ensure no personal or sensitive information is visible in this image as it may be publicly accessible_')}
-              </Text>
-            </Box>
+            
           </Box>
         </Box>
       )}

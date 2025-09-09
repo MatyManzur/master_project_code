@@ -82,7 +82,7 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
     };
 
     return (
-    <Box mb={4} display="flex" justifyContent="center" position="relative" minHeight={maxHeight}>
+    <Box mb={4} display="flex" justifyContent="center" alignItems={'center'} position="relative" h='100%' w='100%'>
         {isLoading && (
             <Skeleton 
                 height={maxHeight} 
