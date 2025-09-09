@@ -8,6 +8,13 @@ import { useReport } from "../providers/ReportProvider";
 import { ImageFrame } from "../components/ImageFrame";
 import { useTranslation } from "react-i18next";
 import { HiExclamationTriangle } from "react-icons/hi2";
+import { startBrightnessMonitoring } from "../helpers/ImageHelper";
+import type { BrightnessAnalysis } from "../helpers/ImageHelper";
+
+// Camera brightness monitoring configuration
+const CAMERA_CONFIG = {
+  BRIGHTNESS_CHECK_INTERVAL_MS: 800, // How often to check brightness in milliseconds
+};
 
 export function Home() {
 
@@ -26,6 +33,11 @@ export function Home() {
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [frontCameras, setFrontCameras] = useState<MediaDeviceInfo[]>([]);
   const [backCameras, setBackCameras] = useState<MediaDeviceInfo[]>([]);
+  
+  // Brightness monitoring
+  const [brightnessStatus, setBrightnessStatus] = useState<'too-dark' | 'ok' | 'too-bright' | null>(null);
+  const [showBrightnessMessage, setShowBrightnessMessage] = useState(false);
+  const brightnessMonitorRef = useRef<(() => void) | null>(null);
   
   const navigate = useNavigate();
   const { setCapturedImage: setContextImage } = useReport();
@@ -110,6 +122,47 @@ export function Home() {
         setMaxZoom(1); // Sin soporte de zoom
       }
     }
+    
+    // Start brightness monitoring when camera is ready
+    if (videoRef.current) {
+      setTimeout(() => {
+        if (videoRef.current && videoRef.current.videoWidth > 0) {
+          startBrightnessAnalysis();
+        }
+      }, 1000);
+    }
+  };
+
+  const startBrightnessAnalysis = () => {
+    if (!videoRef.current) return;
+    
+    // Stop any existing monitoring
+    if (brightnessMonitorRef.current) {
+      brightnessMonitorRef.current();
+    }
+    
+    brightnessMonitorRef.current = startBrightnessMonitoring(
+      videoRef.current,
+      (analysis: BrightnessAnalysis) => {
+        setBrightnessStatus(analysis.status);
+        
+        if (analysis.status !== 'ok') {
+          setShowBrightnessMessage(true);
+        } else {
+          setShowBrightnessMessage(false);
+        }
+      },
+      CAMERA_CONFIG.BRIGHTNESS_CHECK_INTERVAL_MS
+    );
+  };
+
+  const stopBrightnessAnalysis = () => {
+    if (brightnessMonitorRef.current) {
+      brightnessMonitorRef.current();
+      brightnessMonitorRef.current = null;
+    }
+    setBrightnessStatus(null);
+    setShowBrightnessMessage(false);
   };
 
   const enumerateCameras = async () => {
@@ -207,6 +260,7 @@ export function Home() {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    stopBrightnessAnalysis();
   };
 
   const capturePhoto = () => {
@@ -264,6 +318,7 @@ export function Home() {
     setError('');
     setZoomLevel(1);
     setCameraState('initial');
+    stopBrightnessAnalysis();
   };
 
   const rotateImage = () => {
@@ -562,6 +617,32 @@ export function Home() {
                 fontSize="sm"
               >
                 {zoomLevel.toFixed(1)}x
+              </Box>
+            )}
+            
+            {/* Brightness warning message */}
+            {showBrightnessMessage && brightnessStatus && brightnessStatus !== 'ok' && (
+              <Box
+                position="absolute"
+                bottom={24}
+                left="50%"
+                transform="translateX(-50%)"
+                bg={brightnessStatus === 'too-dark' ? 'warning' : 'error'}
+                color="background"
+                px={4}
+                py={2}
+                borderRadius="md"
+                fontSize="sm"
+                fontWeight="medium"
+                textAlign="center"
+                maxW="80%"
+                boxShadow="lg"
+                zIndex={10}
+              >
+                {brightnessStatus === 'too-dark' 
+                  ? t('Scene is too dark - try moving to better lighting')
+                  : t('Scene is too bright - try reducing exposure or moving away from bright light')
+                }
               </Box>
             )}
             

@@ -64,5 +64,7 @@
   "Unable to access camera_ Please ensure you have granted camera permissions_": "Auf die Kamera kann nicht zugegriffen werden. Bitte stellen Sie sicher, dass Sie Kameraberechtigungen erteilt haben.",
   "We need access to your camera to take photos of damage_": "Wir benötigen Zugriff auf Ihre Kamera, um Fotos des Schadens zu machen.",
   "Upload picture from device": "Bild vom Gerät hochladen",
-  "or": "oder"
+  "or": "oder",
+  "Scene is too dark - try moving to better lighting": "Die Szene ist zu dunkel - versuchen Sie, sich zu besserer Beleuchtung zu bewegen",
+  "Scene is too bright - try reducing exposure or moving away from bright light": "Die Szene ist zu hell - versuchen Sie, die Belichtung zu reduzieren oder sich von hellem Licht zu entfernen"
 }

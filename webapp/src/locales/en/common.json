@@ -64,5 +64,7 @@
   "See this report": "See this report",
   "Start New Report": "Start new report",
   "Upload picture from device": "Upload picture from device",
-  "or": "or"
+  "or": "or",
+  "Scene is too dark - try moving to better lighting": "Scene is too dark - try moving to better lighting",
+  "Scene is too bright - try reducing exposure or moving away from bright light": "Scene is too bright - try reducing exposure or moving away from bright light"
 }
