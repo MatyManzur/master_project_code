@@ -1,6 +1,6 @@
 import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
-import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload, HiInformationCircle } from "react-icons/hi";
+import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload, HiInformationCircle, HiSwitchHorizontal, HiUserCircle, HiPhotograph } from "react-icons/hi";
 import { MdRotateRight } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,11 @@ export function Home() {
   const [maxZoom, setMaxZoom] = useState(1);
   const [isZooming, setIsZooming] = useState(false);
   const [lastTouchDistance, setLastTouchDistance] = useState(0);
+  // Camera management
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
+  const [frontCameras, setFrontCameras] = useState<MediaDeviceInfo[]>([]);
+  const [backCameras, setBackCameras] = useState<MediaDeviceInfo[]>([]);
   
   const navigate = useNavigate();
   const { setCapturedImage: setContextImage } = useReport();
@@ -107,18 +112,74 @@ export function Home() {
     }
   };
 
-  const startCameraWithMode = async (mode: string) => {
+  const enumerateCameras = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      setAvailableCameras(videoDevices);
+      
+      const frontCams: MediaDeviceInfo[] = [];
+      const backCams: MediaDeviceInfo[] = [];
+      
+      videoDevices.forEach(device => {
+        const label = device.label.toLowerCase();
+        if (label.includes('front') || label.includes('user') || label.includes('selfie')) {
+          frontCams.push(device);
+        } else if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+          backCams.push(device);
+        } else {
+          const index = videoDevices.indexOf(device);
+          if (index % 2 === 0) {
+            backCams.push(device);
+          } else {
+            frontCams.push(device);
+          }
+        }
+      });
+      
+      setFrontCameras(frontCams);
+      setBackCameras(backCams);
+      
+      return { frontCams, backCams };
+    } catch (err) {
+      return { frontCams: [], backCams: [] };
+    }
+  };
+
+  const startCameraWithMode = async (mode: string, cameraIndex?: number) => {
     try {
       setError('');
       setCameraState('streaming');
       setZoomLevel(1);
-      // Request camera permissions
+      
+      let currentBackCams = backCameras;
+      let currentFrontCams = frontCameras;
+      
+      if (availableCameras.length === 0) {
+        const { frontCams, backCams } = await enumerateCameras();
+        currentBackCams = backCams;
+        currentFrontCams = frontCams;
+      }
+      
+      const useIndex = cameraIndex !== undefined ? cameraIndex : currentCameraIndex;
+      
+      let videoConstraints: any = {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      };
+      
+      if (mode === 'environment' && currentBackCams.length > 0) {
+        const selectedIndex = useIndex % currentBackCams.length;
+        videoConstraints.deviceId = { exact: currentBackCams[selectedIndex].deviceId };
+      } else if (mode === 'user' && currentFrontCams.length > 0) {
+        const selectedIndex = useIndex % currentFrontCams.length;
+        videoConstraints.deviceId = { exact: currentFrontCams[selectedIndex].deviceId };
+      } else {
+        videoConstraints.facingMode = mode;
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: mode,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        },
+        video: videoConstraints,
         audio: false
       });
 
@@ -131,13 +192,10 @@ export function Home() {
         };
       }
     } catch (err: any) {
-      console.error('Error accessing camera:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        // Permission was denied
         setError(t('Camera permission was denied_ Please grant camera access to continue_'));
         setCameraState('permission-denied');
       } else {
-        // Other errors (device not found, etc.)
         setError(t('Unable to access camera_ Please ensure you have granted camera permissions_'));
         setCameraState('initial');
       }
@@ -176,8 +234,28 @@ export function Home() {
     stopCamera();
     const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
     setFacingMode(newFacingMode);
+    setCurrentCameraIndex(0);
     setZoomLevel(1);
-    setTimeout(() => startCameraWithMode(newFacingMode), 100);
+    setTimeout(() => startCameraWithMode(newFacingMode, 0), 100);
+  };
+
+  const switchToNextCamera = async () => {
+    stopCamera();
+    
+    let currentCameras;
+    if (availableCameras.length === 0) {
+      const { frontCams, backCams } = await enumerateCameras();
+      currentCameras = facingMode === 'environment' ? backCams : frontCams;
+    } else {
+      currentCameras = facingMode === 'environment' ? backCameras : frontCameras;
+    }
+    
+    if (currentCameras.length > 1) {
+      const newIndex = (currentCameraIndex + 1) % currentCameras.length;
+      setCurrentCameraIndex(newIndex);
+      setZoomLevel(1);
+      setTimeout(() => startCameraWithMode(facingMode, newIndex), 100);
+    }
   };
 
   const resetCapture = () => {
@@ -193,6 +271,8 @@ export function Home() {
   };
 
   useEffect(() => {
+    enumerateCameras();
+    
     return () => {
       stopCamera();
     };
@@ -402,6 +482,7 @@ export function Home() {
               ref={videoContainerRef}
               w="full"
               h="full"
+              position="relative"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -419,6 +500,52 @@ export function Home() {
                   transform: 'none'
                 }}
               />
+              
+              {/* 3x3 Grid Overlay */}
+              <Box
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                pointerEvents="none"
+                opacity={0.3}
+              >
+                {/* Vertical lines */}
+                <Box
+                  position="absolute"
+                  left="33.33%"
+                  top={0}
+                  bottom={0}
+                  w="1px"
+                  bg="white"
+                />
+                <Box
+                  position="absolute"
+                  left="66.66%"
+                  top={0}
+                  bottom={0}
+                  w="1px"
+                  bg="white"
+                />
+                {/* Horizontal lines */}
+                <Box
+                  position="absolute"
+                  top="33.33%"
+                  left={0}
+                  right={0}
+                  h="1px"
+                  bg="white"
+                />
+                <Box
+                  position="absolute"
+                  top="66.66%"
+                  left={0}
+                  right={0}
+                  h="1px"
+                  bg="white"
+                />
+              </Box>
             </Box>
             
             {/* zoom indicator */}
@@ -435,6 +562,29 @@ export function Home() {
                 fontSize="sm"
               >
                 {zoomLevel.toFixed(1)}x
+              </Box>
+            )}
+            
+            {/* Camera indicator */}
+            {((facingMode === 'environment' && backCameras.length > 1) || 
+              (facingMode === 'user' && frontCameras.length > 1)) && (
+              <Box
+                position="absolute"
+                top={24}
+                left={8}
+                bg="surface"
+                color="onSurface"
+                px={3}
+                py={1}
+                borderRadius="full"
+                fontSize="sm"
+                display="flex"
+                alignItems="center"
+                gap={1}
+              >
+                {facingMode === 'environment' ? 
+                  <><HiPhotograph size={16} /><Text>{currentCameraIndex + 1}/{backCameras.length}</Text></> : 
+                  <><HiUserCircle size={16} /><Text>{currentCameraIndex + 1}/{frontCameras.length}</Text></>}
               </Box>
             )}
             
@@ -460,6 +610,21 @@ export function Home() {
               >
                 <HiRefresh size={20} />
               </Button>
+              
+              {/* Switch between cameras of same facing mode */}
+              {((facingMode === 'environment' && backCameras.length > 1) || 
+                (facingMode === 'user' && frontCameras.length > 1)) && (
+                <Button
+                  bg="surface"
+                  color="onSurface"
+                  size="lg"
+                  borderRadius="full"
+                  onClick={switchToNextCamera}
+                  _hover={{ bg: 'background' }}
+                >
+                  <HiSwitchHorizontal size={16} />
+                </Button>
+              )}
             </Box>
 
             <Box position="absolute" top={8} left={8}>
