@@ -1,2 +1,6 @@
 excalidraw
 samples
+.venv
+DamagedHealthy*
+*.images.ipynb
+results.json
