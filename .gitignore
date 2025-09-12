@@ -1,5 +1,10 @@
 excalidraw
 samples
+**/*.onnx
+**/__pycache__
+.venv
+borrar.*
+.vscode
 .venv
 DamagedHealthy*
 *.images.ipynb

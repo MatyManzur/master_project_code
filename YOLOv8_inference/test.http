@@ -4,10 +4,10 @@ POST http://localhost:8000/prediction
 Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary
-Content-Disposition: form-data; name="file"; filename="sign_bad_deformation_011.png"
+Content-Disposition: form-data; name="file"; filename="a.png"
 Content-Type: image/png
 
-< ../samples/sign_bad_deformation_011.png
+< ../samples/a.png
 --MyBoundary--
 
 ### Get prediction result

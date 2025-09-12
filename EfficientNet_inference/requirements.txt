@@ -6,3 +6,7 @@ fastapi
 python-multipart
 pydantic
 Pillow
+keras==3.10.0
+tf2onnx
+onnx
+onnxruntime

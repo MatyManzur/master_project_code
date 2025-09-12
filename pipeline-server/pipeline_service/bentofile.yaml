@@ -1,0 +1,14 @@
+service: "service.py:PipelineService"
+include:
+  - "service.py"
+  - "classification_utils.py"
+  - "detection_utils.py"
+  - "requirements.txt"
+models:
+  - "detector:latest"
+  - "classifier:latest"
+python:
+  requirements_txt: "requirements.txt"
+docker:
+  python_version: "3.11"
+  distro: debian
