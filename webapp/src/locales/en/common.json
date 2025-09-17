@@ -66,5 +66,13 @@
   "Upload picture from device": "Upload picture from device",
   "or": "or",
   "Scene is too dark - try moving to better lighting": "Scene is too dark - try moving to better lighting",
-  "Scene is too bright - try reducing exposure or moving away from bright light": "Scene is too bright - try reducing exposure or moving away from bright light"
+  "Scene is too bright - try reducing exposure or moving away from bright light": "Scene is too bright - try reducing exposure or moving away from bright light",
+  "How to take a good picture": "How to take a good picture",
+  "Do not show again": "Do not show again",
+  "OK": "OK",
+  "Use the grid to ensure the sign is aligned.": "Use the grid to ensure the sign is aligned.",
+  "Avoid reflections on the signs.": "Avoid reflections on the signs.",
+  "Avoid blurry pictures.": "Avoid blurry pictures.",
+  "Do not take the picture too up close from the sign.": "Do not take the picture too up close from the sign.",
+  "Do not take the picture too far away from the sign. Use the camera zoom if needed.": "Do not take the picture too far away from the sign. Use the camera zoom if needed."
 }

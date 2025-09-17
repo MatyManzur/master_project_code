@@ -1,5 +1,6 @@
-import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, HStack, Image, Text, VStack, Checkbox } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
+import { InstructionPicture } from "../components/InstructionPicture";
 import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload, HiInformationCircle, HiSwitchHorizontal, HiUserCircle, HiPhotograph } from "react-icons/hi";
 import { MdRotateRight } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
@@ -23,6 +24,8 @@ export function Home() {
   const [facingMode, setFacingMode] = useState('environment'); // 'user' for front, 'environment' for back
   const [error, setError] = useState('');
   const [cameraState, setCameraState] = useState<'initial' | 'streaming' | 'captured' | 'permission-denied'>('initial');
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   // Estados para zoom
   const [zoomLevel, setZoomLevel] = useState(1);
   const [maxZoom, setMaxZoom] = useState(1);
@@ -220,17 +223,25 @@ export function Home() {
         width: { ideal: 1920 },
         height: { ideal: 1080 }
       };
-      
+
+      let couldSelectDevice = false;
       if (mode === 'environment' && currentBackCams.length > 0) {
         const selectedIndex = useIndex % currentBackCams.length;
-        videoConstraints.deviceId = { exact: currentBackCams[selectedIndex].deviceId };
+        if (currentBackCams[selectedIndex].deviceId) {
+          videoConstraints.deviceId = { exact: currentBackCams[selectedIndex].deviceId };
+          couldSelectDevice = true;
+        }
       } else if (mode === 'user' && currentFrontCams.length > 0) {
         const selectedIndex = useIndex % currentFrontCams.length;
-        videoConstraints.deviceId = { exact: currentFrontCams[selectedIndex].deviceId };
-      } else {
+        if (currentFrontCams[selectedIndex].deviceId) {
+          videoConstraints.deviceId = { exact: currentFrontCams[selectedIndex].deviceId };
+          couldSelectDevice = true;
+        }
+      }
+      if (!couldSelectDevice) {
         videoConstraints.facingMode = mode;
       }
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: false
@@ -242,6 +253,8 @@ export function Home() {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
           setupCameraCapabilities();
+          // Re-enumerate cameras after successful stream to get updated device info with permissions
+          enumerateCameras();
         };
       }
     } catch (err: any) {
@@ -333,6 +346,10 @@ export function Home() {
     };
   }, []);
 
+  const shouldShowInstructions = () => {
+    return localStorage.getItem('hidePhotoInstructions') !== 'true';
+  };
+
   const isCameraSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
   function onNewReport() {
@@ -340,7 +357,12 @@ export function Home() {
       setError(t('Camera is not supported on this device_'));
       return;
     }
-    startCameraWithMode(facingMode);
+    
+    if (shouldShowInstructions()) {
+      setShowInstructions(true);
+    } else {
+      startCameraWithMode(facingMode);
+    }
   }
 
   function onUploadPicture() {
@@ -381,7 +403,7 @@ export function Home() {
         const normRotationAngle = rotationAngle % 360;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const img = new Image();
+        const img = new window.Image();
         
         img.onload = () => {
           if (!ctx) return;
@@ -423,9 +445,127 @@ export function Home() {
     setCameraState('initial');
   }
 
+  function onCloseInstructions() {
+    setShowInstructions(false);
+    setDontShowAgain(false);
+  }
+
+  function onAcceptInstructions() {
+    if (dontShowAgain) {
+      localStorage.setItem('hidePhotoInstructions', 'true');
+    }
+    setShowInstructions(false);
+    setDontShowAgain(false);
+    startCameraWithMode(facingMode);
+  }
+
   return (
     <>
-      <ActionBar title={t("New Report")} />
+      <ActionBar title={'FixTheSign'} />
+      
+      {showInstructions && (
+        <Box 
+          position="fixed" 
+          top={0} 
+          left={0} 
+          right={0} 
+          bottom={0} 
+          bg="background" 
+          zIndex={3000}
+          display="flex"
+          flexDirection="column"
+        >
+          <Box position="absolute" top={4} right={4} zIndex={1}>
+            <Button
+              bg="surface"
+              color="onSurface"
+              size="md"
+              borderRadius="full"
+              onClick={onCloseInstructions}
+              _hover={{ bg: 'onSurface', color: 'surface' }}
+            >
+              <HiX size={16} />
+            </Button>
+          </Box>
+          
+          <Box pt={8} pb={8} px={6}>
+            <HStack justifyContent="start" gap={3} >
+              <Box color="primary"><HiInformationCircle size={24}  /></Box>
+              <Text fontSize="xl" fontWeight="bold" textAlign="center">
+                {t('How to take a good picture')}
+              </Text>
+            </HStack>
+          </Box>
+          
+          <Box flex={1} px={6} py={0}>
+            <VStack gap={6} h="60vh" align="stretch" overflowY="auto">
+                <InstructionPicture
+                  imageSrc="/tilt_instruction.png"
+                  imageAlt="Instruction 1"
+                  message="Use the grid to ensure the sign is aligned."
+                />
+                
+                <InstructionPicture
+                  imageSrc="/flare_instruction.png"
+                  imageAlt="Instruction 2"
+                  message="Avoid reflections on the signs."
+                />
+                <InstructionPicture
+                  imageSrc="/blur_instruction.png"
+                  imageAlt="Instruction 3"
+                  message="Avoid blurry pictures."
+                />
+                
+                <InstructionPicture
+                  imageSrc="/big_instruction.png"
+                  imageAlt="Instruction 4"
+                  message="Do not take the picture too up close from the sign."
+                />
+                <InstructionPicture
+                  imageSrc="/small_instruction.png"
+                  imageAlt="Instruction 5"
+                  message="Do not take the picture too far away from the sign. Use the camera zoom if needed."
+                />
+            </VStack>
+          </Box>
+          
+          <Box p={6} pb={8}>
+            <VStack gap={4}>
+              <HStack gap={3} alignItems="center">
+                <Checkbox.Root
+                  checked={dontShowAgain}
+                  onCheckedChange={(e) => setDontShowAgain(!!e.checked)}
+                  colorPalette="primary"
+                >
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control />
+                  <Checkbox.Label>
+                    <Text fontSize="sm" color="textSecondary">
+                      {t('Do not show again')}
+                    </Text>
+                  </Checkbox.Label>
+                </Checkbox.Root>
+              </HStack>
+              
+              <Button
+                bg="primary"
+                color="onPrimary"
+                size="xl"
+                w="full"
+                onClick={onAcceptInstructions}
+                _hover={{
+                  bg: 'onPrimary',
+                  color: 'primary',
+                }}
+              >
+                <Text fontSize="lg" fontWeight="bold">
+                  {t('OK')}
+                </Text>
+              </Button>
+            </VStack>
+          </Box>
+        </Box>
+      )}
       
       {error && (
         <Box p={4}>
@@ -437,8 +577,18 @@ export function Home() {
       )}
 
       {cameraState === 'initial' && (
-        <VStack gap={8}>
-          <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'} mt={20}>
+        <VStack gap={'2vh'}>
+          <Box display="flex" justifyContent="center" alignItems="center" maxH='24vh' my={'5vh'}>
+            <Image
+              src="/pwa-512.png"
+              alt="FixTheSign logo"
+              maxH='24vh'
+              objectFit="contain"
+              draggable={false}
+              bg='background'
+            />
+          </Box>
+          <Box w='full' alignContent={'center'} justifyContent={'center'} display={'flex'}>
             <Button bg="secondary" color="onSecondary" size="2xl" 
               _hover={{
                   bg: 'onSecondary',

@@ -66,5 +66,13 @@
   "Upload picture from device": "Subir imagen del dispositivo",
   "or": "o",
   "Scene is too dark - try moving to better lighting": "La escena está muy oscura - intenta moverte a un lugar con mejor iluminación",
-  "Scene is too bright - try reducing exposure or moving away from bright light": "La escena está muy brillante - intenta reducir la exposición o alejarte de la luz fuerte"
+  "Scene is too bright - try reducing exposure or moving away from bright light": "La escena está muy brillante - intenta reducir la exposición o alejarte de la luz fuerte",
+  "How to take a good picture": "Cómo tomar una buena foto",
+  "Do not show again": "No mostrar de nuevo",
+  "OK": "OK",
+  "Use the grid to ensure the sign is aligned.": "Usa la cuadrícula para asegurar que la señal esté alineada.",
+  "Avoid reflections on the signs.": "Evita los reflejos en las señales.",
+  "Avoid blurry pictures.": "Evita fotos borrosas.",
+  "Do not take the picture too up close from the sign.": "No tomes la foto muy cerca de la señal.",
+  "Do not take the picture too far away from the sign. Use the camera zoom if needed.": "No tomes la foto muy lejos de la señal. Usa el zoom de la cámara si es necesario."
 }

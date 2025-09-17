@@ -66,5 +66,13 @@
   "Upload picture from device": "Bild vom Gerät hochladen",
   "or": "oder",
   "Scene is too dark - try moving to better lighting": "Die Szene ist zu dunkel - versuchen Sie, sich zu besserer Beleuchtung zu bewegen",
-  "Scene is too bright - try reducing exposure or moving away from bright light": "Die Szene ist zu hell - versuchen Sie, die Belichtung zu reduzieren oder sich von hellem Licht zu entfernen"
+  "Scene is too bright - try reducing exposure or moving away from bright light": "Die Szene ist zu hell - versuchen Sie, die Belichtung zu reduzieren oder sich von hellem Licht zu entfernen",
+  "How to take a good picture": "Wie man ein gutes Foto macht",
+  "Do not show again": "Nicht mehr anzeigen",
+  "OK": "OK",
+  "Use the grid to ensure the sign is aligned.": "Verwenden Sie das Raster, um sicherzustellen, dass das Schild ausgerichtet ist.",
+  "Avoid reflections on the signs.": "Vermeiden Sie Reflexionen auf den Schildern.",
+  "Avoid blurry pictures.": "Vermeiden Sie unscharfe Bilder.",
+  "Do not take the picture too up close from the sign.": "Machen Sie das Foto nicht zu nah am Schild.",
+  "Do not take the picture too far away from the sign. Use the camera zoom if needed.": "Machen Sie das Foto nicht zu weit vom Schild entfernt. Verwenden Sie den Kamera-Zoom, falls nötig."
 }
