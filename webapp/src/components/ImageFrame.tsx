@@ -1,4 +1,4 @@
-import { Box, Skeleton, Text } from "@chakra-ui/react";
+import { Box, Skeleton, Spinner, Text } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -83,12 +83,27 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
 
     return (
     <Box mb={4} display="flex" justifyContent="center" alignItems={'center'} position="relative" h='100%' w='100%'>
-        {isLoading && (
+        {isLoading && boundingBoxes.length === 0 && (
             <Skeleton 
                 height={maxHeight} 
                 width="150px"
                 borderRadius="8px"
             />
+        )}
+        {isLoading && boundingBoxes.length > 0 && (
+            <Box 
+                position="absolute" 
+                top={0} 
+                left={0} 
+                width="100%" 
+                height="100%" 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                borderRadius="8px"
+            >
+                <Spinner />
+            </Box>
         )}
         <Box 
             position="relative" 
@@ -102,17 +117,22 @@ export function ImageFrame({ imageSrc, imageAlt = "image", maxHeight = "50vh", m
                 alt={imageAlt}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                style={{
+                style={boundingBoxes.length === 0 ? {
                     maxWidth: maxWidth,
                     maxHeight: maxHeight,
                     height: 'auto',
                     width: 'auto',
                     borderRadius: '8px',
                     border: '2px solid'
+                } : {
+                    height: maxHeight,
+                    width: maxWidth,
+                    borderRadius: '8px',
+                    border: '2px solid'
                 }}
             />
             {/* Bounding box overlays */}
-            {boundingBoxes.map((bbox, index) => {
+            {!isLoading && boundingBoxes.map((bbox, index) => {
                 const position = calculateBoundingBoxPosition(bbox);
                 if (!position) return null;
                 
