@@ -1,4 +1,4 @@
-import { Box, Button, HStack, Image, Text, VStack, Checkbox } from "@chakra-ui/react";
+import { Box, Button, HStack, Image, Text, VStack, Checkbox, Icon } from "@chakra-ui/react";
 import ActionBar from "../components/ActionBar";
 import { InstructionPicture } from "../components/InstructionPicture";
 import { HiCamera, HiCheck, HiRefresh, HiX, HiUpload, HiInformationCircle, HiSwitchHorizontal, HiUserCircle, HiPhotograph } from "react-icons/hi";
@@ -15,6 +15,7 @@ import type { BrightnessAnalysis } from "../helpers/ImageHelper";
 // Camera brightness monitoring configuration
 const CAMERA_CONFIG = {
   BRIGHTNESS_CHECK_INTERVAL_MS: 800, // How often to check brightness in milliseconds
+  MAX_CSS_ZOOM: 3, // Maximum zoom level for CSS scaling when camera zoom is not supported
 };
 
 export function Home() {
@@ -31,6 +32,7 @@ export function Home() {
   const [maxZoom, setMaxZoom] = useState(1);
   const [isZooming, setIsZooming] = useState(false);
   const [lastTouchDistance, setLastTouchDistance] = useState(0);
+  const [isSimulatedZoom, setIsSimulatedZoom] = useState(false);
   // Camera management
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
@@ -64,24 +66,33 @@ export function Home() {
   };
 
   const applyZoom = async (newZoomLevel: number) => {
-    if (!streamRef.current) return;
-    
+    if (!streamRef.current || !videoRef.current) return;
+
     const videoTrack = streamRef.current.getVideoTracks()[0];
     if (!videoTrack) return;
 
     const capabilities = videoTrack.getCapabilities() as any;
-    if (capabilities.zoom) {
-      const clampedZoom = Math.max(capabilities.zoom.min || 1, 
-                                  Math.min(capabilities.zoom.max || 1, newZoomLevel));
-      
+
+    if (capabilities && "zoom" in capabilities) {
+      // Browser supports zoom via constraints
+      const clampedZoom = Math.max(
+        capabilities.zoom.min || 1,
+        Math.min(capabilities.zoom.max || 1, newZoomLevel)
+      );
+
       try {
         await videoTrack.applyConstraints({
-          advanced: [{ zoom: clampedZoom } as any]
+          advanced: [{ zoom: clampedZoom } as any],
         });
         setZoomLevel(clampedZoom);
       } catch (err) {
-        console.warn('Failed to apply zoom:', err);
+        console.warn("Failed to apply zoom:", err);
       }
+    } else {
+      const clampedZoom = Math.max(1, Math.min(CAMERA_CONFIG.MAX_CSS_ZOOM, newZoomLevel));
+      videoRef.current.style.transform = `scale(${clampedZoom})`;
+      videoRef.current.style.transformOrigin = "center center";
+      setZoomLevel(clampedZoom);
     }
   };
 
@@ -122,7 +133,8 @@ export function Home() {
       if (capabilities.zoom) {
         setMaxZoom(capabilities.zoom.max || 3);
       } else {
-        setMaxZoom(1); // Sin soporte de zoom
+        setMaxZoom(CAMERA_CONFIG.MAX_CSS_ZOOM);
+        setIsSimulatedZoom(true);
       }
     }
     
@@ -287,7 +299,17 @@ export function Home() {
     canvas.height = video.videoHeight;
 
     if (context) {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (isSimulatedZoom && zoomLevel > 1) {
+        const scale = zoomLevel;
+        const sw = video.videoWidth / scale;
+        const sh = video.videoHeight / scale;
+        const sx = (video.videoWidth - sw) / 2;
+        const sy = (video.videoHeight - sh) / 2;
+
+        context.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      } else {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
 
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
       setCapturedImage(imageDataUrl);
@@ -819,17 +841,8 @@ export function Home() {
               </Box>
             )}
             
-            <Box position="absolute" bottom={8} left={0} right={0} display="flex" justifyContent="center" gap={4}>
-              <Button
-                bg="surface"
-                color="onSurface"
-                size="lg"
-                borderRadius="full"
-                onClick={capturePhoto}
-                _hover={{ bg: 'background' }}
-              >
-                <HiCamera size={24} />
-              </Button>
+            <Box position="absolute" bottom={8} left={0} right={0} display="flex" justifyContent="center" alignItems={'center'} gap={4}>
+              
               
               <Button
                 bg="surface"
@@ -840,6 +853,17 @@ export function Home() {
                 _hover={{ bg: 'background' }}
               >
                 <HiRefresh size={20} />
+              </Button>
+
+              <Button
+                bg="surface"
+                color="onSurface"
+                size="2xl"
+                borderRadius="full"
+                onClick={capturePhoto}
+                _hover={{ bg: 'background' }}
+              >
+                <Icon as={HiCamera} boxSize={'32px'} />
               </Button>
               
               {/* Switch between cameras of same facing mode */}
