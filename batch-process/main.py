@@ -159,7 +159,6 @@ class BatchProcessor:
         try:
             logger.info(f"Downloading image from S3: {s3_key}")
             
-            # Download the object
             response = self.s3_client.get_object(Bucket=self.bucket_name, Key=s3_key)
             image_data = response['Body'].read()
             

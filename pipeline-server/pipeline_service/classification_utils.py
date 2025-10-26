@@ -15,9 +15,10 @@ INPUT_SIZE = (380, 380)
 ImageType = t.Annotated[Path, ContentType("image/*")]
 
 def pre_preprocess_image(img):
+    """Format the image to a square to the EfficientNet input size."""
     original_size = img.size
     max_side = max(original_size)
-    new_img = Image.new("RGB", (max_side, max_side), (0, 0, 0))  # black edges
+    new_img = Image.new("RGB", (max_side, max_side), (0, 0, 0))
     paste_position = (
         (max_side - original_size[0]) // 2,
         (max_side - original_size[1]) // 2
@@ -27,6 +28,7 @@ def pre_preprocess_image(img):
     return new_img
 
 def preprocess_image(img):
+    """Preprocess the image for EfficientNet."""
     new_img = pre_preprocess_image(img)
     img_array = keras_preprocessing_image.img_to_array(new_img)
     img_array = efficientnet.preprocess_input(img_array)
