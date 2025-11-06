@@ -20,7 +20,7 @@ aws batch submit-job \
 
 ## Deploy Webapp
 
-Set VITE_HOST and VITE_API_GATEWAY_URL in ../webapp/.env and run:
+Set VITE_HOST and VITE_API_GATEWAY_URL in ../webapp/.env, build webapp and run:
 ```bash
 ./deploy_webapp.sh
 ```
