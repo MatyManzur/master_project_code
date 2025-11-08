@@ -12,3 +12,5 @@ results.json
 Just-*
 traffic-signs-cl-*
 /*.ipynb
+EfficientNet_inference/
+YOLOv8_inference/

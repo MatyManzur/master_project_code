@@ -44,8 +44,6 @@ def process_predictions_of_image(image_path: str, predictions: list[APIResponse]
     gt_bboxes_predicted = [False for _ in gt_bboxes]
     results: list[ObjectPrediction] = []
     for p in predictions:
-        class_id = p.cls_score
-
         # Find the closest ground truth bbox for label
         best_iou = 0
         actual_label = "background"
@@ -75,7 +73,7 @@ def process_predictions_of_image(image_path: str, predictions: list[APIResponse]
             actual_bbox=gt_bboxes[gt_idx][1] if gt_idx is not None else None,
             predicted_bbox=p.bbox,
             predicted_label=predicted_label,
-            score=class_id,
+            score=p.cls_score,
             iou=best_iou,
             confidence=p.confidence
         ))
